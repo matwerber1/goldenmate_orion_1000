@@ -14,16 +14,6 @@ This software is provided “as is” without any warranties, express or implied
 
 2. The [(de)serialization module for the battery's proprietary protocol](./orion1000_bms/protocol.py) was based on ChatGPT providing me with an [English translation](./docs/orion_1000_protocol_english.md) of the [original Chinese documentation PDF provided to me via email by Goldenmate](./docs/orion_1000_protocol_chinese.pdf).
 
-## Use case
-
-Personally, I plan to use my battery to power a few IoT devices (e.g. automatic door, light, camera) in a chicken coop that is not connected to the grid. The battery will be charged by a solar array and I want to use HomeAssistant (HA) to monitor battery status, health, charge etc. Once this Python client is done, I can wrap it into a custom HA integration. You could use or adapt this client for your own battery monitoring/automation goals, with or without HomeAssistant.
-
-## Why this project exists
-
-1. Goldenmate states on their website and the documentation that came with the battery that the battery supports "Bluetooth, CAN bus, and RS485/Modbus". However, bluetooth is only via their mobile app and they don't actually support standard modbus... they use a proprietary serial protocol over a physical RS485 (or CAN bus) connection.
-
-2. Goldenmate does not publish the details of their proprietary serial protocol, though I requested this over email and they were kind enough to share the details via PDF (see docs/).
-
 ## Hardware
 
 > Note - I'm a novice with IoT and totally new to battery BMS, RS485, Modbus, etc. and figuring this out as I go. There may be better ways to go about this... I'm just sharing what's working for me so far.
@@ -141,3 +131,19 @@ mathewwerber@Mathews-MBP goldenmate_orion_1000 % uv run main.py
   "id_ascii": ""
 }
 ```
+
+## FAQ
+
+### Can I use this with other Goldenmate batteries?
+
+I do not know whether Goldenmate uses the same protocol with their other battery models, nor do I know if and when they update the protocol for newer versions of the Orion 1000 battery. For the most up-to-date protocol information for your battery, you may want to contact Goldenmate directly and ask for up-to-date documentation.
+
+### My use case?
+
+Personally, I plan to use my battery to power a few IoT devices (e.g. automatic door, light, camera) in a chicken coop that is not connected to the grid. The battery will be charged by a solar array and I want to use HomeAssistant (HA) to monitor battery status, health, charge etc. Once this Python client is done, I can wrap it into a custom HA integration. You could use or adapt this client for your own battery monitoring/automation goals, with or without HomeAssistant.
+
+### Why this project exists?
+
+1. Goldenmate states on their website and the documentation that came with the battery that the battery supports "Bluetooth, CAN bus, and RS485/Modbus". However, bluetooth is only via their mobile app and they don't actually support standard modbus... they use a proprietary serial protocol over a physical RS485 (or CAN bus) connection.
+
+2. Goldenmate does not publish the details of their proprietary serial protocol, though I requested this over email and they were kind enough to share the details via PDF (see docs/).
