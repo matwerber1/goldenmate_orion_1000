@@ -19,6 +19,50 @@ from dataclasses import dataclass, field
 from enum import Enum, IntFlag
 from typing import Final, Iterable, List, Tuple, Sequence, TypeAlias, Optional
 
+
+def hexdump(b: bytes) -> str:
+    return " ".join(f"{x:02X}" for x in b)
+
+
+def be16(hi: int, lo: int) -> int:
+    return (hi << 8) | lo
+
+
+def le16(lo: int, hi: int) -> int:
+    return (hi << 8) | lo
+
+
+def xor_checksum(data: bytes, start: int, end: int) -> int:
+    c = 0
+    for x in data[start : end + 1]:
+        c ^= x
+    return c
+
+
+@dataclass
+class CurrentStatusDiagnostics:
+    length_field: int
+    actual_len: int
+    length_ok: bool
+    checksum_ok: bool
+    cmd: tuple[int, int]
+    status_byte: int
+    discharge_active: bool
+    charge_active: bool
+    mos_temp_present: bool
+    ambient_temp_present: bool
+    raw_current_10ma_be: int
+    raw_current_10ma_le: int
+    chosen_endianness: str
+    current_ma_unsigned: int
+    current_a_signed: float
+    warnings: list[str]
+
+
+class ProtocolError(RuntimeError):
+    pass
+
+
 START_BYTE: Final[int] = 0xEA
 PRODUCT_ID: Final[int] = 0xD1
 END_BYTE: Final[int] = 0xF5
@@ -245,7 +289,10 @@ class CurrentStatusData:
         mos_temp_present = bool(status & StatusBits.HAS_MOS_TEMP)
         ambient_temp_present = bool(status & StatusBits.HAS_AMBIENT_TEMP)
 
-        current_10ma = (frame[8] << 8) | frame[9]
+        # Current reported in 10 mA units. Despite the PDF describing [8]=high,[9]=low,
+        # real-world frames from Orion1000 appear LITTLE-ENDIAN (low, high). Using LE fixes
+        # absurdly large readings (e.g., ~200 A when the actual load is ~0.8 A).
+        current_10ma = frame[8] | (frame[9] << 8)
         current_ma = current_10ma * 10
 
         ov = OverVoltageBits(frame[10])
