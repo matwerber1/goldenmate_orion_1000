@@ -26,6 +26,8 @@ This software is provided “as is” without any warranties, express or implied
 
 ### Physical connection
 
+![hardware_connection](docs/physical_connection.png)
+
 1. `[Battery BMS Port] -> [RS485 cable's A+B wires] -> [RS485 A+B terminals of RS485 to Ethernet adapter]`
 2. `[Ethernet port of RS485 to Ethernet adapter] -> [ethernet port of TP-Link Travel Router]`
 
