@@ -33,9 +33,13 @@ This software is provided “as is” without any warranties, express or implied
 
 > Note - router set to "Repeater mode" and connected to my home WiFi network. When the RS485 adapter is plugged into the ethernet port of the TP Link router, it appears as a wired device as if it was plugged into my main router. I'll eventually replace this router with a similar outdoor-rated mini repeater when the project is done, but the travel router does the job for now and allows me to position the battery anywhere I want. I use the battery to power both the router and the RS485 adapter.
 
-### Current status
+### Project status
 
-Again, this is a work in process... but `main.py` demonstrates using the client in it's current state and I am successfully reading some information from the battery. Not sure if I'm parsing all of the info correctly yet, but some of it definitely looks correct. Here's an example of results:
+`main.py` demonstrates using the client in it's current state and I am successfully reading some information from the battery. Not sure if I'm parsing all of the info correctly yet, but some of it definitely looks correct.
+
+#### Example output
+
+Here's an example of results from `main.py`:
 
 ```sh
 mathewwerber@Mathews-MBP goldenmate_orion_1000 % uv run main.py
@@ -133,6 +137,15 @@ mathewwerber@Mathews-MBP goldenmate_orion_1000 % uv run main.py
   "id_ascii": ""
 }
 ```
+
+## Limitations
+
+### Low amp discharge not reported
+
+If a load is attached, the BMS status request includes discharge current rounded to the neartest 10 mA **but** this value is zero and the `discharge_active` bit is set to 0 (false) if a load does not meet a minimum threshold. I don't know what that threshold hold is, but so far I've observed that:
+
+- Discharge of `~0.3 A` **does not** meet reporting threshold
+- Discharge of `~0.8 A` **does** meets reporting threshold
 
 ## FAQ
 
