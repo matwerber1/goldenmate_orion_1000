@@ -1,0 +1,7 @@
+{
+  "python.analysis.diagnosticMode": "workspace",
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

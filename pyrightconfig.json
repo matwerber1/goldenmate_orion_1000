@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/vscode-pyright/schemas/pyrightconfig.schema.json",
+  "typeCheckingMode": "standard",
+  "diagnosticMode": "workspace",
+  "include": ["src", "tests"], // adjust to your project dirs
+  "ignore": ["**/.venv", "**/site-packages/**", "/Users/mathewwerber/.local/share/uv/python/**"],
+  "useLibraryCodeForTypes": false
+}
