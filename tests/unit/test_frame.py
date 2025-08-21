@@ -14,20 +14,20 @@ def test_frame_round_trip() -> None:
         start=START,
         product_id=PRODUCT_ID_DEFAULT,
         address=0x01,
-        data_len=0x02,
+        data_len=0x04,
         cmd_hi=0x03,
         cmd_lo=0x00,
         payload=b"",
-        checksum=0x01,
-        end=END
+        checksum=0x07,
+        end=END,
     )
-    
+
     # Encode to bytes
     raw = frame.to_bytes()
-    
+
     # Decode back to frame
     decoded = Frame.from_bytes(raw)
-    
+
     assert decoded == frame
 
 
@@ -35,24 +35,24 @@ def test_frame_round_trip() -> None:
 def test_build_frame() -> None:
     """Test build_frame function."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
-    expected = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
+    expected = b"\xea\xd1\x01\x04\x03\x00\x07\xf5"
     assert raw == expected
 
 
 @pytest.mark.phase2
 def test_decode_function() -> None:
     """Test decode function."""
-    raw = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
+    raw = b"\xea\xd1\x01\x04\x03\x00\x07\xf5"
     frame = decode(raw)
-    
+
     assert frame.start == START
     assert frame.product_id == PRODUCT_ID_DEFAULT
     assert frame.address == 0x01
-    assert frame.data_len == 0x02
+    assert frame.data_len == 0x04
     assert frame.cmd_hi == 0x03
     assert frame.cmd_lo == 0x00
     assert frame.payload == b""
-    assert frame.checksum == 0x01
+    assert frame.checksum == 0x07
     assert frame.end == END
 
 
@@ -62,15 +62,15 @@ def test_frame_with_payload() -> None:
     payload = b"\x12\x34"
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, payload)
     frame = decode(raw)
-    
+
     assert frame.payload == payload
-    assert frame.data_len == 4  # 2 cmd bytes + 2 payload bytes
+    assert frame.data_len == 6  # 2 cmd bytes + 2 payload bytes + checksum + end
 
 
 @pytest.mark.phase2
 def test_invalid_start_byte() -> None:
     """Test frame with invalid start byte."""
-    raw = b"\xFF\xD1\x01\x02\x03\x00\xD1\xF5"
+    raw = b"\xff\xd1\x01\x02\x03\x00\xd1\xf5"
     with pytest.raises(FrameError, match="Invalid start byte"):
         Frame.from_bytes(raw)
 
@@ -78,7 +78,7 @@ def test_invalid_start_byte() -> None:
 @pytest.mark.phase2
 def test_invalid_end_byte() -> None:
     """Test frame with invalid end byte."""
-    raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xFF"
+    raw = b"\xea\xd1\x01\x04\x03\x00\x07\xff"
     with pytest.raises(FrameError, match="Invalid end byte"):
         Frame.from_bytes(raw)
 
@@ -86,7 +86,7 @@ def test_invalid_end_byte() -> None:
 @pytest.mark.phase2
 def test_invalid_checksum() -> None:
     """Test frame with invalid checksum."""
-    raw = b"\xEA\xD1\x01\x02\x03\x00\xFF\xF5"
+    raw = b"\xea\xd1\x01\x04\x03\x00\xff\xf5"
     with pytest.raises(ChecksumError, match="Checksum mismatch"):
         Frame.from_bytes(raw)
 
@@ -94,7 +94,7 @@ def test_invalid_checksum() -> None:
 @pytest.mark.phase2
 def test_frame_too_short() -> None:
     """Test frame that is too short."""
-    raw = b"\xEA\xD1\x01"
+    raw = b"\xea\xd1\x01"
     with pytest.raises(FrameError, match="Frame too short"):
         Frame.from_bytes(raw)
 
@@ -102,7 +102,7 @@ def test_frame_too_short() -> None:
 @pytest.mark.phase2
 def test_invalid_frame_length() -> None:
     """Test frame with incorrect length."""
-    raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5\xFF"  # Extra byte
+    raw = b"\xea\xd1\x01\x04\x03\x00\x07\xf5\xff"  # Extra byte
     with pytest.raises(FrameError, match="Invalid frame length"):
         Frame.from_bytes(raw)
 
@@ -110,10 +110,10 @@ def test_invalid_frame_length() -> None:
 @pytest.mark.phase2
 def test_frame_minimum_length() -> None:
     """Test frame at minimum valid length."""
-    # Minimum frame: start + product_id + address + data_len(2) + cmd_hi + cmd_lo + checksum + end = 8 bytes
-    raw = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
+    # Minimum frame: start + product_id + address + data_len(4) + cmd_hi + cmd_lo + checksum + end = 8 bytes
+    raw = b"\xea\xd1\x01\x04\x03\x00\x07\xf5"
     frame = Frame.from_bytes(raw)
-    assert frame.data_len == 2
+    assert frame.data_len == 4
     assert frame.payload == b""
 
 
@@ -124,4 +124,4 @@ def test_frame_large_payload() -> None:
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, payload)
     frame = decode(raw)
     assert frame.payload == payload
-    assert frame.data_len == 10  # 2 cmd bytes + 8 payload bytes
+    assert frame.data_len == 12  # 2 cmd bytes + 8 payload bytes + checksum + end

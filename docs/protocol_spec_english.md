@@ -23,11 +23,11 @@ All frames follow this structure:
 - **Start**: Frame start byte (0xEA)
 - **Product ID**: Identifies the Orion 1000 device (1 byte, 0xD1)
 - **Address**: Device address (1 byte), supports multiple devices on the same bus
-- **Length**: Length of the command and data fields combined (1 byte)
+- **Length**: Number of bytes remaining in the frame after this length byte, up through and including the final end byte.
 - **Command High**: Always 0xFF (1 byte)
 - **Command Low**: Command code (1 byte)
-- **Data**: Command-specific data (variable length)
-- **Checksum**: XOR of all bytes from **Length** through the last data byte (does NOT include Product ID or Address)
+- **Data**: Command-specific data (variable number of bytes)
+- **Checksum**: XOR of all bytes from **Length** through the last data byte
 - **End**: Frame end byte (0xF5)
 
 ### Checksum Calculation
@@ -59,7 +59,7 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   - Cell Voltages: 16 cells, each 2 bytes (uint16_t), unit: millivolts (mV)
   - Temperature Probes: 3 probes, each 2 bytes (int16_t), unit: 0.1°C
   - System String Count: 1 byte (number of battery strings)
-- **Length**: 36 bytes (Command High + Command Low + 32 bytes data + checksum)
+- **Length**: 41 bytes (Command High + Command Low + 37 bytes data + checksum + end byte)
 
 - **Example Data Layout:**
 
@@ -83,7 +83,7 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   - Version: 1 byte (hardware or firmware version)
   - Fault Flags: 1 byte (bitfield of current fault conditions)
 
-- **Length**: 13 bytes (Command High + Command Low + 10 bytes data + checksum)
+- **Length**: 15 bytes (Command High + Command Low + 11 bytes data + checksum + end byte)
 
 ### Capacity and Status Data Packet (Response to 0xFF 0x04)
 
@@ -102,7 +102,7 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   - Scheme ID: 1 byte (configuration scheme identifier)
   - Reserved: 2 bytes (reserved for future use)
 
-- **Length**: 23 bytes (Command High + Command Low + 20 bytes data + checksum)
+- **Length**: 25 bytes (Command High + Command Low + 21 bytes data + checksum + end byte)
 
 ### Serial Number Packet (Response to 0xFF 0x11)
 
@@ -111,7 +111,7 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   - Length: 1 byte (length of ASCII string)
   - Serial Number: Variable length ASCII string (length as specified)
 
-- **Length**: Variable (Command High + Command Low + Length + ASCII data + checksum)
+- **Length**: Variable (Command High + Command Low + Length field + ASCII data + checksum + end byte)
 
 ### MOS Control Response (Response to Commands 0xFF 0x19, 0x1A, 0x1B, 0x1C)
 
@@ -166,7 +166,7 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   - Start: EA
   - Product ID: D1
   - Address: 01
-  - Length: 02 (Command High + Command Low)
+  - Length: 04 (Command High + Command Low + checksum + end byte)
   - Command: FF 02 (Voltage Request)
   - Checksum: XOR of Length, Command High, Command Low = 02 XOR FF XOR 02 = FD
   - End: F5
@@ -174,29 +174,31 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
   Correct full frame with checksum:
 
   ```
-  EA D1 01 02 FF 02 FD F5
+  EA D1 01 04 FF 02 FD F5
   ```
 
 - **Response Frame (example with 16 cell voltages and temperatures):**
   ```
-  EA D1 01 24 FF 02 0C 34 0C 35 0C 36 0C 37 0C 38 0C 39 0C 3A 0C 3B 0C 3C 0C 3D 0C 3E 0C 3F 00 64 00 65 00 66 02 F5
+  EA D1 01 29 FF 02 0C 34 0C 35 0C 36 0C 37 0C 38 0C 39 0C 3A 0C 3B 0C 3C 0C 3D 0C 3E 0C 3F 00 64 00 65 00 66 02 XX F5
   ```
-  - Length: 0x24 (36 bytes)
+  - Length: 0x29 (41 bytes: cmd_hi + cmd_lo + 37 data bytes + checksum + end)
   - Cell voltages: 16 × 2 bytes (example hex values)
   - Temperatures: 3 × 2 bytes (example values)
   - System string count: 0x02
-  - Checksum: XOR of Length through last data byte = 0xF5
+  - Checksum: XOR of Length through last data byte
+  - End: 0xF5
 
 ### MOS Control Example
 
 - **Allow Discharge Command:**
   ```
-  EA D1 01 02 FF 19 FD F5
+  EA D1 01 04 FF 19 XX F5
   ```
 - **Response Frame (success):**
   ```
-  EA D1 01 03 FF 19 00 FB F5
+  EA D1 01 05 FF 19 00 XX F5
   ```
+  - Length: 05 (cmd_hi + cmd_lo + status byte + checksum + end)
   - Status byte 0x00 indicates success
   - Checksum calculated over Length through status byte
 
@@ -215,20 +217,20 @@ The checksum is computed as the XOR of all bytes starting from the **Length** by
 Given the frame:
 
 ```
-EA D1 01 02 FF 02 FD F5
+EA D1 01 04 FF 02 F9 F5
 ```
 
 Calculate checksum as XOR of bytes from Length through Command/Data:
 
 ```
-Length = 0x02
+Length = 0x04
 Command High = 0xFF
 Command Low = 0x02
 
-Checksum = 0x02 XOR 0xFF XOR 0x02 = 0xFD
+Checksum = 0x04 XOR 0xFF XOR 0x02 = 0xF9
 ```
 
-This checksum (0xFD) is placed before the End byte (0xF5).
+This checksum (0xF9) is placed before the End byte (0xF5).
 
 ---
 

@@ -9,7 +9,7 @@ from orion1000_bms.protocol.constants import PRODUCT_ID_DEFAULT
 def test_build_frame_minimal() -> None:
     """Test building minimal frame with no payload."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
-    expected = b"\xea\xd1\x01\x02\x03\x00\x01\xf5"
+    expected = b"\xea\xd1\x01\x04\x03\x00\x07\xf5"
     assert raw == expected
 
 
@@ -23,7 +23,7 @@ def test_build_frame_with_payload() -> None:
     assert raw[0] == 0xEA  # start
     assert raw[1] == PRODUCT_ID_DEFAULT  # product_id
     assert raw[2] == 0x01  # address
-    assert raw[3] == 0x04  # data_len (2 cmd + 2 payload)
+    assert raw[3] == 0x06  # data_len (2 cmd + 2 payload + checksum + end)
     assert raw[4] == 0x03  # cmd_hi
     assert raw[5] == 0x00  # cmd_lo
     assert raw[6:8] == payload  # payload

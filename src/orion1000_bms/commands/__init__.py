@@ -21,3 +21,12 @@ from .mos_control import (
 )
 from .registry import CommandId, COMMANDS
 from .base import CommandSpec
+
+__all__ = [
+    "CapacityStatusRequest",
+    "CapacityStatusResponse",
+    "CurrentStatusRequest",
+    "CurrentStatusResponse",
+    "SerialNumberRequest",
+    "SerialNumberResponse",
+]

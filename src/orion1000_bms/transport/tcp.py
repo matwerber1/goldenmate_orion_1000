@@ -1,9 +1,9 @@
-"""TCP transport implementation."""
+"""TCP transport implementation using pyserial."""
 
-import socket
-import threading
 import time
+import logging
 from typing import Optional
+import serial
 from ..protocol.constants import START, END
 from ..exceptions import TransportError, TimeoutError
 from ..logging import get_logger, log_frame_tx, log_frame_rx
@@ -11,7 +11,7 @@ from .base import BaseTransport
 
 
 class TcpTransport(BaseTransport):
-    """Synchronous TCP transport for BMS communication."""
+    """TCP transport for BMS communication using pyserial."""
 
     def __init__(
         self,
@@ -27,41 +27,39 @@ class TcpTransport(BaseTransport):
         Args:
             host: TCP server hostname or IP
             port: TCP server port
-            connect_timeout: Connection timeout in seconds
+            connect_timeout: Connection timeout (unused with pyserial)
             read_timeout: Read timeout in seconds
             max_retries: Maximum number of retries on timeout
         """
         super().__init__(max_retries=max_retries)
         self.host = host
         self.port = port
-        self.connect_timeout = connect_timeout
         self.read_timeout = read_timeout
-        self._socket: Optional[socket.socket] = None
-        self._lock = threading.Lock()
+        self._serial: Optional[serial.Serial] = None
         self._logger = get_logger(__name__)
 
     def open_if_needed(self) -> None:
         """Open connection if not already open."""
-        if self._socket is None:
+        if self._serial is None:
             try:
-                self._socket = socket.create_connection(
-                    (self.host, self.port), timeout=self.connect_timeout
+                url = f"socket://{self.host}:{self.port}"
+                self._serial = serial.serial_for_url(
+                    url,
+                    timeout=self.read_timeout,
+                    inter_byte_timeout=0.2,
+                    write_timeout=1.0,
                 )
-                self._socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                self._socket.settimeout(self.read_timeout)
                 self._logger.debug("Connected to %s:%d", self.host, self.port)
-            except socket.timeout:
-                raise TimeoutError(f"Connection timeout to {self.host}:{self.port}")
-            except OSError as e:
+            except Exception as e:
                 raise TransportError(
                     f"Connection failed to {self.host}:{self.port}: {e}"
                 )
 
     def close(self) -> None:
         """Close the connection."""
-        if self._socket:
-            self._socket.close()
-            self._socket = None
+        if self._serial:
+            self._serial.close()
+            self._serial = None
 
     def _send_request_impl(
         self, payload: bytes, *, timeout: float | None = None
@@ -75,82 +73,64 @@ class TcpTransport(BaseTransport):
         Returns:
             Response frame bytes
         """
-        with self._lock:
-            self.open_if_needed()
+        self.open_if_needed()
 
-            old_timeout = None
-            if timeout is not None and self._socket:
-                old_timeout = self._socket.gettimeout()
-                self._socket.settimeout(timeout)
+        if not self._serial:
+            raise TransportError("Serial connection not open")
 
-            try:
-                # Send request
-                if not self._socket:
-                    raise TransportError("Socket not connected")
+        try:
+            # Clear buffers and send request
+            self._serial.reset_input_buffer()
+            self._serial.reset_output_buffer()
 
-                log_frame_tx(self._logger, payload)
-                self._socket.sendall(payload)
+            log_frame_tx(self._logger, payload)
+            self._serial.write(payload)
+            self._serial.flush()
 
-                # Read response using two-phase strategy
-                response = self._read_response()
-                log_frame_rx(self._logger, response)
-                return response
-            except socket.timeout:
+            # Read response
+            response = self._read_frame(timeout or self.read_timeout)
+            log_frame_rx(self._logger, response)
+
+            # Inter-request spacing per BMS protocol
+            time.sleep(0.20)
+
+            return response
+        except Exception as e:
+            if "timeout" in str(e).lower():
                 raise TimeoutError("Request timeout")
-            except OSError as e:
-                raise TransportError(f"Transport error: {e}")
-            finally:
-                if old_timeout is not None and self._socket:
-                    self._socket.settimeout(old_timeout)
+            raise TransportError(f"Transport error: {e}")
 
-    def _read_response(self) -> bytes:
-        """Read complete response frame."""
-        if not self._socket:
-            raise TransportError("Socket not connected")
+    def _read_exact(self, n: int, *, timeout_s: float = 1.0) -> bytes:
+        """Read exactly n bytes or raise TimeoutError."""
+        if not self._serial:
+            raise TransportError("Serial connection not open")
 
-        # Phase 1: Read until we find start byte
-        while True:
-            byte = self._recv_exact(1)
-            if byte[0] == START:
-                break
+        end_by = time.monotonic() + timeout_s
+        buf = bytearray()
+        while len(buf) < n:
+            if time.monotonic() > end_by:
+                raise TimeoutError(f"Timeout reading {n} bytes (got {len(buf)})")
+            chunk = self._serial.read(n - len(buf))
+            if chunk:
+                buf.extend(chunk)
+            else:
+                time.sleep(0.005)
+        return bytes(buf)
 
-        # Phase 2: Read header to get frame length
-        header = self._recv_exact(3)  # product_id, address, data_len
-        data_len = header[2]
+    def _read_frame(self, timeout: float) -> bytes:
+        """Read one complete frame with validation."""
+        # Read header: [START PID addr len]
+        header = self._read_exact(4, timeout_s=timeout)
+        if header[0] != START:
+            raise TransportError(f"Bad start byte: {header[0]:#04x}")
 
-        # Phase 3: Read remaining data + checksum + end
-        remaining = data_len + 2  # data + checksum + end
-        data = self._recv_exact(remaining)
+        length = header[3]
+        if length < 4:
+            raise TransportError(f"Length too small: {length}")
 
-        # Verify end byte
-        if data[-1] != END:
-            raise TransportError(f"Invalid end byte: {data[-1]:#x}")
+        # Read payload: data + checksum + end
+        payload = self._read_exact(length, timeout_s=timeout)
+        if payload[-1] != END:
+            raise TransportError("Missing end byte")
 
-        # Return complete frame
-        return bytes([START]) + header + data
-
-    def _recv_exact(self, n: int) -> bytes:
-        """Receive exactly n bytes from socket.
-
-        Args:
-            n: Number of bytes to receive
-
-        Returns:
-            Exactly n bytes
-
-        Raises:
-            TransportError: If connection closed or timeout
-        """
-        if not self._socket:
-            raise TransportError("Socket not connected")
-
-        data = b""
-        while len(data) < n:
-            try:
-                chunk = self._socket.recv(n - len(data))
-                if not chunk:
-                    raise TransportError("Connection closed")
-                data += chunk
-            except socket.timeout:
-                raise TimeoutError("Read timeout")
-        return data
+        return header + payload

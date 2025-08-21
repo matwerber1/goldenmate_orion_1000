@@ -8,7 +8,7 @@
   },
   // Use Pylance as the language server
   "python.languageServer": "Pylance",
-
+  "python.analysis.ignore": [".venv", "__pycache__"],
   // Enable/disable auto-import completions
   "python.analysis.autoImportCompletions": true,
 

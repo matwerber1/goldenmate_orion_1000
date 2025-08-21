@@ -14,6 +14,7 @@ from .commands import (
     CurrentStatusResponse,
     CapacityStatusRequest,
     CapacityStatusResponse,
+    SerialNumberRequest,
     SerialNumberResponse,
     AllowDischargeRequest,
     DisallowDischargeRequest,
@@ -91,7 +92,7 @@ class BmsClient:
                 raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
 
             self._logger.debug(
-                "Sending command 0x%04x to address 0x%02x",
+                "Sending command 0x%02x to address 0x%02x",
                 req.command_id,
                 self._address,
             )

@@ -40,8 +40,8 @@ def build_frame(
     Returns:
         Complete frame as bytes
     """
-    # minimum four bytes = cmd high + cmd low + checksum + end byte
-    data_len = 4 + len(payload)
+    # data_len includes all bytes after length byte through end byte
+    data_len = 2 + len(payload) + 2  # cmd_hi + cmd_lo + payload + checksum + end
 
     # Build frame without checksum
     frame_data = bytes([START, product_id, address, data_len, cmd_hi, cmd_lo]) + payload

@@ -64,24 +64,28 @@ class Frame:
         address = raw[2]
         data_len = raw[3]
 
-        # Validate frame length
-        expected_len = 4 + data_len + 2  # header(4) + data_len + checksum + end
+        # Validate frame length - data_len now includes checksum and end byte
+        expected_len = (
+            4 + data_len
+        )  # header(4) + data_len (which includes everything after length)
         if len(raw) != expected_len:
             logger.warning("Invalid frame length: %d != %d", len(raw), expected_len)
             raise FrameError(f"Invalid frame length: {len(raw)} != {expected_len}")
 
         cmd_hi = raw[4]
         cmd_lo = raw[5]
-        payload = raw[6 : 4 + data_len]  # data_len includes cmd bytes
-        checksum = raw[4 + data_len]
-        end = raw[4 + data_len + 1]
+        payload = raw[6 : 4 + data_len - 2]  # payload excludes checksum and end byte
+        checksum = raw[4 + data_len - 2]  # checksum is 2nd to last byte
+        end = raw[4 + data_len - 1]  # end is last byte
 
         if end != END:
             logger.warning("Invalid end byte: 0x%02x", end)
             raise FrameError(f"Invalid end byte: {end:#x}")
 
         # Verify checksum
-        checksum_data = raw[3 : 4 + data_len]  # Length through payload (excluding Product ID and Address)
+        checksum_data = raw[
+            3 : 4 + data_len - 2
+        ]  # Length through payload (excluding checksum and end)
         expected_checksum = xor_checksum(checksum_data)
         if checksum != expected_checksum:
             logger.warning(

@@ -80,7 +80,7 @@ def main() -> None:
     logging.debug("Opening %s", url)
     ser = serial.serial_for_url(
         url,
-        timeout=1.0,  # per read timeout
+        timeout=3.0,  # per read timeout
         inter_byte_timeout=0.2,  # helps with TCP bridges
         write_timeout=1.0,
     )
