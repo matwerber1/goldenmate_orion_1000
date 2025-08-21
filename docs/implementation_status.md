@@ -23,9 +23,9 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 1 – Protocol constants & checksum
 
-- [x] PENDING_APPROVAL: Create `protocol/constants.py` with START, END, PRODUCT_ID_DEFAULT
-- [x] PENDING_APPROVAL: Implement `xor_checksum()` function in `protocol/codec.py`
-- [x] PENDING_APPROVAL: Add unit tests for checksum examples from spec
+- [x] APPROVED: Create `protocol/constants.py` with START, END, PRODUCT_ID_DEFAULT
+- [x] APPROVED: Implement `xor_checksum()` function in `protocol/codec.py`
+- [x] APPROVED: Add unit tests for checksum examples from spec
 
 ### Affected Files:
 
@@ -35,11 +35,19 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 2 – Frame type & encode/decode
 
-- [ ] TODO: Create `Frame` dataclass in `protocol/frame.py` with all fields
-- [ ] TODO: Implement `to_bytes()` method for frame encoding
-- [ ] TODO: Implement `from_bytes()` classmethod for frame decoding with validation
-- [ ] TODO: Add `build_frame()` and `decode()` functions to `protocol/codec.py`
-- [ ] TODO: Add tests for round-trip encode/decode and boundary checks
+- [x] PENDING_APPROVAL: Create `Frame` dataclass in `protocol/frame.py` with all fields
+- [x] PENDING_APPROVAL: Implement `to_bytes()` method for frame encoding
+- [x] PENDING_APPROVAL: Implement `from_bytes()` classmethod for frame decoding with validation
+- [x] PENDING_APPROVAL: Add `build_frame()` and `decode()` functions to `protocol/codec.py`
+- [x] PENDING_APPROVAL: Add tests for round-trip encode/decode and boundary checks
+
+### Affected Files:
+
+- src/orion1000_bms/protocol/codec.py
+- src/orion1000_bms/protocol/frame.py
+- tests/unit/test_codec.py
+- tests/unit/test_constants.py
+- tests/unit/test_frame.py
 
 ## Phase 3 – Transport (TCP)
 

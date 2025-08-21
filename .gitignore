@@ -5,7 +5,7 @@ env/
 ENV/
 
 # Python
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 *.so
@@ -125,3 +125,10 @@ Desktop.ini
 
 # Linux
 *~
+
+__pycache__/
+*.py[cod]
+*$py.class
+EOF
+
+*.pyc

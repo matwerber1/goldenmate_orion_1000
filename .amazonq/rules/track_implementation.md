@@ -4,7 +4,7 @@
 
 - When you begin work on a phase or step from the implementation plan, update it's status in implementation_status.md to IN_PROGRESS.
 
-- Create pytest tests for newly-added functionality.
+- Create and use pytest to validate that newly-added or modified code is working as expected.
 
 - If a pytest test covers code that is part of an implementation phase, add a pytest marker that specifes which phase the tested code is part of.
 
@@ -17,3 +17,5 @@
 - Before working on a phase, confirm that all prior phases are marked as APPROVED. If a prior phase is not marked as APPROVED, do not proceed.
 
 - When a python file is created or modified as part of an implementation phase, create or update an alphabetical list of affected files in that specific phase's section of the implementation status file.
+
+- when beginning or resuming work on a phase from the implementation plan, review the project plan (project_plan.md)
