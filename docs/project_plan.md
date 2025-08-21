@@ -26,7 +26,6 @@ src/
       __init__.py
       base.py                # AbstractTransport (send_request -> bytes)
       tcp.py                 # Sync TCP transport (socket)
-      tcp_async.py           # Async TCP transport (asyncio streams)
       utils.py               # Reconnect/backoff, keepalive, small helpers
 
     protocol/
@@ -46,7 +45,6 @@ src/
       # add additional read/write commands here as files
 
     client.py                # BmsClient (sync)
-    client_async.py          # BmsClientAsync (async)
     polling.py               # Optional periodic polling helpers
     cli.py                   # Typer CLI (optional user tool)
 
@@ -101,9 +99,10 @@ LICENSE
 
 ### Clients
 
-- `BmsClient` and `BmsClientAsync` expose ergonomic methods (e.g., `read_total_voltage()`).
-- They build/encode a frame, call the transport, decode/validate, and dispatch to the response parser.
-- Respect an inter‑request delay (≥ 200 ms) and command‑specific overrides.
+- `BmsClient` exposes ergonomic methods (e.g., `read_total_voltage()`).
+- It builds/encodes a frame, calls the transport, decodes/validates, and dispatches to the response parser.
+- Respects an inter‑request delay (≥ 200 ms) and command‑specific overrides.
+- The design maintains extensibility for future async clients by defining an abstract transport interface.
 
 ---
 
@@ -144,7 +143,6 @@ LICENSE
   1. Read 1 byte (start), then next 4 bytes to reach `data_len` field, or read a fixed header size.
   2. Parse header to compute remaining (2 cmd bytes + data bytes) + checksum + end.
   3. Read remainder; verify final end byte present.
-- `transport/tcp_async.py`: mirror using `asyncio.open_connection` + `asyncio.Lock`.
 - Tests: fake TCP server responds with canned frames for known commands.
 
 ### Phase 4 – Exceptions & logging
@@ -167,13 +165,13 @@ LICENSE
   - `read_current.py`
 - Tests use example frames from the spec as golden vectors.
 
-### Phase 6 – Client APIs (sync + async)
+### Phase 6 – Client APIs (sync)
 
 - `client.py` exposes:
   - `request(self, req: BaseCommand, *, timeout: float | None = None) -> BaseResponse`
   - Helper methods: `read_total_voltage()`, `read_current()`, `read_cell_voltage(cell: int)`.
   - Enforce ≥ 200 ms spacing between requests (configurable); allow per‑command overrides.
-- `client_async.py` mirrors the API with `async`/`await` and `asyncio.Lock`.
+- The abstract transport base class and design keep the door open for future async client implementations.
 
 ### Phase 7 – CLI (optional but handy)
 
