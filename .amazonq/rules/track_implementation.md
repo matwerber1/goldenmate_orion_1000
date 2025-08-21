@@ -8,7 +8,7 @@
 
 - If a pytest test covers code that is part of an implementation phase, add a pytest marker that specifes which phase the tested code is part of.
 
-- When you think you have finished the work for a phase, run all tests marked as covering code within that phase and any prior phases. A phase cannot be considered complete unless the current phase and all prior phase tests are passing.
+- When you think you have finished the work for a phase, re-run all pytest tests across the entire project and confirm they are passing before considering a phase complete.
 
 - If you complete a phase or step from the implementation plan and all tests marked for that phase are passing, update it's status in implementation_status.md to PENDING_APPROVAL.
 
@@ -19,3 +19,5 @@
 - When a python file is created or modified as part of an implementation phase, create or update an alphabetical list of affected files in that specific phase's section of the implementation status file.
 
 - when beginning or resuming work on a phase from the implementation plan, review the project plan (project_plan.md)
+
+- if pytest or any pytest-related dependencies are missing from the project, use uv to add them

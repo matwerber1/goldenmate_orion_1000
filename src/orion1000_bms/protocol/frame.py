@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from .constants import START, END, PRODUCT_ID_DEFAULT
 from .codec import xor_checksum
+from ..exceptions import FrameError, ChecksumError
 
 
 @dataclass(slots=True, frozen=True)
@@ -42,11 +43,11 @@ class Frame:
     def from_bytes(cls, raw: bytes) -> Frame:
         """Parse frame from bytes with validation."""
         if len(raw) < 8:
-            raise ValueError("Frame too short")
+            raise FrameError("Frame too short")
         
         start = raw[0]
         if start != START:
-            raise ValueError(f"Invalid start byte: {start:#x}")
+            raise FrameError(f"Invalid start byte: {start:#x}")
         
         product_id = raw[1]
         address = raw[2]
@@ -55,7 +56,7 @@ class Frame:
         # Validate frame length
         expected_len = 4 + data_len + 2  # header(4) + data_len + checksum + end
         if len(raw) != expected_len:
-            raise ValueError(f"Invalid frame length: {len(raw)} != {expected_len}")
+            raise FrameError(f"Invalid frame length: {len(raw)} != {expected_len}")
         
         cmd_hi = raw[4]
         cmd_lo = raw[5]
@@ -64,13 +65,13 @@ class Frame:
         end = raw[4+data_len+1]
         
         if end != END:
-            raise ValueError(f"Invalid end byte: {end:#x}")
+            raise FrameError(f"Invalid end byte: {end:#x}")
         
         # Verify checksum
         checksum_data = raw[1:4+data_len]  # product_id through payload
         expected_checksum = xor_checksum(checksum_data)
         if checksum != expected_checksum:
-            raise ValueError(f"Checksum mismatch: {checksum:#x} != {expected_checksum:#x}")
+            raise ChecksumError(f"Checksum mismatch: {checksum:#x} != {expected_checksum:#x}")
         
         return cls(
             start=start,

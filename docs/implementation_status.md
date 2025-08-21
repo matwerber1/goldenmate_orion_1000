@@ -35,11 +35,11 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 2 – Frame type & encode/decode
 
-- [x] PENDING_APPROVAL: Create `Frame` dataclass in `protocol/frame.py` with all fields
-- [x] PENDING_APPROVAL: Implement `to_bytes()` method for frame encoding
-- [x] PENDING_APPROVAL: Implement `from_bytes()` classmethod for frame decoding with validation
-- [x] PENDING_APPROVAL: Add `build_frame()` and `decode()` functions to `protocol/codec.py`
-- [x] PENDING_APPROVAL: Add tests for round-trip encode/decode and boundary checks
+- [x] APPROVED: Create `Frame` dataclass in `protocol/frame.py` with all fields
+- [x] APPROVED: Implement `to_bytes()` method for frame encoding
+- [x] APPROVED: Implement `from_bytes()` classmethod for frame decoding with validation
+- [x] APPROVED: Add `build_frame()` and `decode()` functions to `protocol/codec.py`
+- [x] APPROVED: Add tests for round-trip encode/decode and boundary checks
 
 ### Affected Files:
 
@@ -51,15 +51,30 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 3 – Transport (TCP)
 
-- [ ] TODO: Define `AbstractTransport` Protocol in `transport/base.py`
-- [ ] TODO: Implement sync TCP transport in `transport/tcp.py` with socket handling
-- [ ] TODO: Add deterministic read strategy (two-phase read with end-byte verification)
-- [ ] TODO: Add tests with fake TCP server for canned responses
+- [x] APPROVED: Define `AbstractTransport` Protocol in `transport/base.py`
+- [x] APPROVED: Implement sync TCP transport in `transport/tcp.py` with socket handling
+- [x] APPROVED: Implement deterministic read strategy (two-phase read with end-byte verification)
+- [x] APPROVED: Add tests with fake TCP server for canned responses
+
+### Affected Files:
+
+- src/orion1000_bms/transport/base.py
+- src/orion1000_bms/transport/tcp.py
+- tests/integration/fakes/fake_bms_server.py
+- tests/integration/test_tcp_transport.py
 
 ## Phase 4 – Exceptions & logging
 
-- [ ] TODO: Create exception hierarchy in `exceptions.py`
-- [ ] TODO: Implement logger factory in `logging.py` with hex dump support
+- [x] PENDING_APPROVAL: Create exception hierarchy in `exceptions.py`
+- [x] PENDING_APPROVAL: Implement logger factory in `logging.py` with hex dump support
+
+### Affected Files:
+- src/orion1000_bms/exceptions.py
+- src/orion1000_bms/logging.py
+- src/orion1000_bms/protocol/frame.py
+- src/orion1000_bms/transport/tcp.py
+- tests/unit/test_exceptions.py
+- tests/unit/test_logging.py
 
 ## Phase 5 – Commands & registry (initial set)
 
@@ -113,3 +128,9 @@ This document tracks the completion status of each phase and step outlined in th
 - [ ] TODO: Golden fixtures live in `tests/integration/data/frames/`
 - [ ] TODO: CLI can send raw frame and print hex dump
 - [ ] TODO: Type-check clean, ruff clean, tests green
+
+## Unplanned work
+
+- Updated test files to expect new exception types (FrameError, ChecksumError, TransportError) instead of ValueError and generic exceptions.
+- Added pytest markers (@pytest.mark.phase1, @pytest.mark.phase2, etc.) to all test functions to identify which implementation phase they cover.
+- Fixed test compatibility issues after implementing Phase 4 exception hierarchy.

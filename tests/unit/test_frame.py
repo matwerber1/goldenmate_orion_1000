@@ -4,8 +4,10 @@ import pytest
 from orion1000_bms.protocol.frame import Frame
 from orion1000_bms.protocol.codec import build_frame, decode
 from orion1000_bms.protocol.constants import START, END, PRODUCT_ID_DEFAULT
+from orion1000_bms.exceptions import FrameError, ChecksumError
 
 
+@pytest.mark.phase2
 def test_frame_round_trip() -> None:
     """Test frame encode/decode round trip."""
     frame = Frame(
@@ -29,6 +31,7 @@ def test_frame_round_trip() -> None:
     assert decoded == frame
 
 
+@pytest.mark.phase2
 def test_build_frame() -> None:
     """Test build_frame function."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
@@ -36,6 +39,7 @@ def test_build_frame() -> None:
     assert raw == expected
 
 
+@pytest.mark.phase2
 def test_decode_function() -> None:
     """Test decode function."""
     raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5"
@@ -52,6 +56,7 @@ def test_decode_function() -> None:
     assert frame.end == END
 
 
+@pytest.mark.phase2
 def test_frame_with_payload() -> None:
     """Test frame with payload data."""
     payload = b"\x12\x34"
@@ -62,41 +67,47 @@ def test_frame_with_payload() -> None:
     assert frame.data_len == 4  # 2 cmd bytes + 2 payload bytes
 
 
+@pytest.mark.phase2
 def test_invalid_start_byte() -> None:
     """Test frame with invalid start byte."""
     raw = b"\xFF\xD1\x01\x02\x03\x00\xD1\xF5"
-    with pytest.raises(ValueError, match="Invalid start byte"):
+    with pytest.raises(FrameError, match="Invalid start byte"):
         Frame.from_bytes(raw)
 
 
+@pytest.mark.phase2
 def test_invalid_end_byte() -> None:
     """Test frame with invalid end byte."""
     raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xFF"
-    with pytest.raises(ValueError, match="Invalid end byte"):
+    with pytest.raises(FrameError, match="Invalid end byte"):
         Frame.from_bytes(raw)
 
 
+@pytest.mark.phase2
 def test_invalid_checksum() -> None:
     """Test frame with invalid checksum."""
     raw = b"\xEA\xD1\x01\x02\x03\x00\xFF\xF5"
-    with pytest.raises(ValueError, match="Checksum mismatch"):
+    with pytest.raises(ChecksumError, match="Checksum mismatch"):
         Frame.from_bytes(raw)
 
 
+@pytest.mark.phase2
 def test_frame_too_short() -> None:
     """Test frame that is too short."""
     raw = b"\xEA\xD1\x01"
-    with pytest.raises(ValueError, match="Frame too short"):
+    with pytest.raises(FrameError, match="Frame too short"):
         Frame.from_bytes(raw)
 
 
+@pytest.mark.phase2
 def test_invalid_frame_length() -> None:
     """Test frame with incorrect length."""
     raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5\xFF"  # Extra byte
-    with pytest.raises(ValueError, match="Invalid frame length"):
+    with pytest.raises(FrameError, match="Invalid frame length"):
         Frame.from_bytes(raw)
 
 
+@pytest.mark.phase2
 def test_frame_minimum_length() -> None:
     """Test frame at minimum valid length."""
     # Minimum frame: start + product_id + address + data_len(2) + cmd_hi + cmd_lo + checksum + end = 8 bytes
@@ -106,6 +117,7 @@ def test_frame_minimum_length() -> None:
     assert frame.payload == b""
 
 
+@pytest.mark.phase2
 def test_frame_large_payload() -> None:
     """Test frame with larger payload."""
     payload = b"\x01\x02\x03\x04\x05\x06\x07\x08"

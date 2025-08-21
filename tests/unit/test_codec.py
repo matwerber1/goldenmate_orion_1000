@@ -5,6 +5,7 @@ from orion1000_bms.protocol.codec import build_frame, decode, xor_checksum
 from orion1000_bms.protocol.constants import PRODUCT_ID_DEFAULT
 
 
+@pytest.mark.phase2
 def test_build_frame_minimal() -> None:
     """Test building minimal frame with no payload."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
@@ -12,6 +13,7 @@ def test_build_frame_minimal() -> None:
     assert raw == expected
 
 
+@pytest.mark.phase2
 def test_build_frame_with_payload() -> None:
     """Test building frame with payload."""
     payload = b"\x12\x34"
@@ -33,6 +35,7 @@ def test_build_frame_with_payload() -> None:
     assert raw[-2] == expected_checksum
 
 
+@pytest.mark.phase2
 def test_decode_round_trip() -> None:
     """Test decode matches build_frame output."""
     payload = b"\xAB\xCD\xEF"
@@ -46,6 +49,7 @@ def test_decode_round_trip() -> None:
     assert frame.payload == payload
 
 
+@pytest.mark.phase2
 def test_build_frame_different_product_id() -> None:
     """Test building frame with different product ID."""
     raw = build_frame(0xAA, 0x02, 0x05, 0x06, b"\xFF")
@@ -58,6 +62,7 @@ def test_build_frame_different_product_id() -> None:
     assert frame.payload == b"\xFF"
 
 
+@pytest.mark.phase2
 def test_build_frame_max_values() -> None:
     """Test building frame with maximum byte values."""
     raw = build_frame(0xFF, 0xFF, 0xFF, 0xFF, b"\xFF\xFF")
