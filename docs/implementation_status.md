@@ -4,9 +4,9 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 0 – Bootstrap & tooling
 
-- [x] PENDING_APPROVAL: Create `src/` layout shown above
-- [x] PENDING_APPROVAL: Configure `pyproject.toml` with build settings, dev deps, and tool configurations
-- [x] PENDING_APPROVAL: Add `README.md` with minimal example and `LICENSE`
+- [x] APPROVED: Create `src/` layout shown above
+- [x] APPROVED: Configure `pyproject.toml` with build settings, dev deps, and tool configurations
+- [x] APPROVED: Add `README.md` with minimal example and `LICENSE`
 
 ### Affected Files:
 - CHANGELOG.md
