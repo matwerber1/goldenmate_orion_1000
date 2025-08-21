@@ -1,0 +1,5 @@
+- if pyproject.toml does not already exist in the project root, use uv to create one for this project.
+- if .venv does not already exist in the project root, use uv to create a virtual env at .venv for this project.
+- if a python version file does not already exist, use uv to create one and pin the project python version to 3.13.
+- use uv to manage project python dependencies
+- if not already activated, activate the project's virtual env by running `source .venv/bin/activate`
