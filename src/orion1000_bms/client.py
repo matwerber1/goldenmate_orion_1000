@@ -14,7 +14,6 @@ from .commands import (
     CurrentStatusResponse,
     CapacityStatusRequest,
     CapacityStatusResponse,
-    SerialNumberRequest,
     SerialNumberResponse,
     AllowDischargeRequest,
     DisallowDischargeRequest,
@@ -40,7 +39,7 @@ class BmsClient:
         *,
         product_id: int = PRODUCT_ID_DEFAULT,
         address: int = 0x01,
-        min_spacing_s: float = 0.2,
+        min_spacing_s: float = 1,
     ) -> None:
         """Initialize BMS client.
 
@@ -131,7 +130,10 @@ class BmsClient:
 
             # Parse response payload (include command bytes in payload)
             try:
-                full_payload = bytes([response_frame.cmd_hi, response_frame.cmd_lo]) + response_frame.payload
+                full_payload = (
+                    bytes([response_frame.cmd_hi, response_frame.cmd_lo])
+                    + response_frame.payload
+                )
                 response = spec.resp.from_payload(full_payload)
                 self._logger.debug(
                     "Successfully processed command 0x%02x", req.command_id
@@ -159,7 +161,9 @@ class BmsClient:
         resp = cast(VoltageResponse, self.request(req, timeout=timeout))
         return resp
 
-    def read_current_status(self, *, timeout: float | None = None) -> CurrentStatusResponse:
+    def read_current_status(
+        self, *, timeout: float | None = None
+    ) -> CurrentStatusResponse:
         """Read current and status information.
 
         Args:
@@ -172,7 +176,9 @@ class BmsClient:
         resp = cast(CurrentStatusResponse, self.request(req, timeout=timeout))
         return resp
 
-    def read_capacity_status(self, *, timeout: float | None = None) -> CapacityStatusResponse:
+    def read_capacity_status(
+        self, *, timeout: float | None = None
+    ) -> CapacityStatusResponse:
         """Read capacity and status information.
 
         Args:
@@ -275,7 +281,9 @@ class BmsClient:
         current_status = self.read_current_status(timeout=timeout)
         return current_status.current
 
-    def read_cell_voltage(self, cell_index: int, *, timeout: float | None = None) -> float:
+    def read_cell_voltage(
+        self, cell_index: int, *, timeout: float | None = None
+    ) -> float:
         """Read individual cell voltage.
 
         Args:

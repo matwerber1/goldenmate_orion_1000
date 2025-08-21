@@ -21,8 +21,11 @@ classifiers = [
 ]
 dependencies = [
     "coverage>=7.10.4",
+    "pyserial>=3.5",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
+    "serial>=0.0.97",
+    "types-pyserial>=3.5.0.20250809",
 ]
 
 [project.optional-dependencies]
