@@ -11,6 +11,28 @@
     "file://tests/**/*.py"
   ],
   "tools": ["*"],
-  "allowedTools": ["source .venv/bin/activate", "pytest", "ruff"],
+  "allowedTools": ["execute_bash"],
+  "toolsSettings": {
+    "execute_bash": {
+      "allowedCommands": [
+        "grep",
+        "find",
+        "wc",
+        "head",
+        "tail",
+        "cat",
+        "diff",
+        "git diff",
+        "git log",
+        "eslint",
+        "pylint",
+        "pytest",
+        "rubocop",
+        "ruff",
+        "ruff format *",
+        "source .venv/bin/activate"
+      ]
+    }
+  },
   "useLegacyMcpJson": true
 }
