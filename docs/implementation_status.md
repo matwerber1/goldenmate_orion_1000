@@ -9,22 +9,29 @@ This document tracks the completion status of each phase and step outlined in th
 - [x] APPROVED: Add `README.md` with minimal example and `LICENSE`
 
 ### Affected Files:
+
 - CHANGELOG.md
 - LICENSE
 - README.md
 - pyproject.toml
-- src/orion1000_bms/__init__.py
-- src/orion1000_bms/commands/__init__.py
-- src/orion1000_bms/protocol/__init__.py
+- src/orion1000_bms/**init**.py
+- src/orion1000_bms/commands/**init**.py
+- src/orion1000_bms/protocol/**init**.py
 - src/orion1000_bms/py.typed
-- src/orion1000_bms/transport/__init__.py
+- src/orion1000_bms/transport/**init**.py
 - tests/conftest.py
 
 ## Phase 1 – Protocol constants & checksum
 
-- [ ] TODO: Create `protocol/constants.py` with START, END, PRODUCT_ID_DEFAULT
-- [ ] TODO: Implement `xor_checksum()` function in `protocol/codec.py`
-- [ ] TODO: Add unit tests for checksum examples from spec
+- [x] PENDING_APPROVAL: Create `protocol/constants.py` with START, END, PRODUCT_ID_DEFAULT
+- [x] PENDING_APPROVAL: Implement `xor_checksum()` function in `protocol/codec.py`
+- [x] PENDING_APPROVAL: Add unit tests for checksum examples from spec
+
+### Affected Files:
+
+- src/orion1000_bms/protocol/codec.py
+- src/orion1000_bms/protocol/constants.py
+- tests/unit/test_checksum.py
 
 ## Phase 2 – Frame type & encode/decode
 
