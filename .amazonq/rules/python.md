@@ -7,3 +7,5 @@
 - add type annotations to all function and method return types. If a function or method does not return a value, use "-> None".
 - add type annotations to all parameters in function and method call signatures
 - after finishing changes to a file, run "ruff format" on that file.
+
+- import the logging package and create a logger with "logger = logging.getLogger(**name**)" at the top of each module. Within each module, leverage the built-in logger methods info, debug, warn, and exception in a best-practices manner.

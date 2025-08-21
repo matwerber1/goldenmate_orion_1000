@@ -75,10 +75,18 @@ class BmsClient:
             try:
                 cmd_id = CommandId(req.command_id)
             except ValueError:
+                self._logger.warning("Unknown command ID: 0x%04x", req.command_id)
                 raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
-            
+
             if cmd_id not in COMMANDS:
+                self._logger.warning("Command not in registry: 0x%04x", req.command_id)
                 raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
+
+            self._logger.debug(
+                "Sending command 0x%04x to address 0x%02x",
+                req.command_id,
+                self._address,
+            )
 
             spec = COMMANDS[cmd_id]
 
@@ -103,10 +111,27 @@ class BmsClient:
 
             # Verify response matches request
             if (response_frame.cmd_hi != cmd_hi) or (response_frame.cmd_lo != cmd_lo):
+                self._logger.warning(
+                    "Response command mismatch: expected 0x%02x%02x, got 0x%02x%02x",
+                    cmd_hi,
+                    cmd_lo,
+                    response_frame.cmd_hi,
+                    response_frame.cmd_lo,
+                )
                 raise UnsupportedCommandError("Response command mismatch")
 
             # Parse response payload
-            response = spec.resp.from_payload(response_frame.payload)
+            try:
+                response = spec.resp.from_payload(response_frame.payload)
+                self._logger.debug(
+                    "Successfully processed command 0x%04x", req.command_id
+                )
+            except Exception as e:
+                self._logger.exception(
+                    "Failed to parse response payload for command 0x%04x",
+                    req.command_id,
+                )
+                raise
 
             self._last_request_time = time.time()
             return response

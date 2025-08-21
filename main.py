@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Example usage of Orion 1000 BMS client."""
 
+import logging
 from orion1000_bms import BmsClient
 from orion1000_bms.transport.tcp import TcpTransport
 
 
 def main() -> None:
     """Connect to BMS and read basic data."""
+
+    logging.basicConfig(
+        level=logging.DEBUG,  # <-- Change to INFO, WARNING, ERROR as needed
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
     # Configure connection - update these values for your setup
     host = "192.168.99.94"  # TCP device server IP
     port = 26  # TCP device server port

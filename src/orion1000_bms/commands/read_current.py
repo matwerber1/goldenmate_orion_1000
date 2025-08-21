@@ -1,10 +1,13 @@
 """Read current command implementation."""
 
 from __future__ import annotations
+import logging
 from dataclasses import dataclass
 import struct
 from .registry import CommandId, COMMANDS
 from .base import CommandSpec
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -36,11 +39,13 @@ class ReadCurrentResponse:
             ReadCurrentResponse with current in amperes
         """
         if len(payload) != 2:
+            logger.warning("Invalid payload length for current: %d", len(payload))
             raise ValueError(f"Invalid payload length: {len(payload)}")
 
         # Current is big-endian 16-bit unsigned integer in 0.1A units
         current_raw = struct.unpack(">H", payload)[0]
         current = current_raw / 10.0
+        logger.debug("Parsed current: %.1fA", current)
 
         return cls(current=current)
 

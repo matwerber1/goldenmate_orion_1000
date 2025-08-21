@@ -1,11 +1,14 @@
 """Read cell voltage command implementation."""
 
 from __future__ import annotations
+import logging
 from dataclasses import dataclass
 import struct
 from typing import List
 from .registry import CommandId, COMMANDS
 from .base import CommandSpec
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -18,6 +21,7 @@ class ReadCellVoltageRequest:
 
     def to_payload(self) -> bytes:
         """Convert to payload bytes containing cell index."""
+        logger.debug("Creating cell voltage request for cell %d", self.cell_index)
         return struct.pack(">B", self.cell_index)
 
 
@@ -39,12 +43,14 @@ class ReadCellVoltageResponse:
             ReadCellVoltageResponse with cell index and voltage
         """
         if len(payload) != 3:
+            logger.warning("Invalid payload length for cell voltage: %d", len(payload))
             raise ValueError(f"Invalid payload length: {len(payload)}")
 
         # First byte is cell index, next 2 bytes are voltage in 0.001V units
         cell_index = payload[0]
         voltage_raw = struct.unpack(">H", payload[1:3])[0]
         voltage = voltage_raw / 1000.0
+        logger.debug("Parsed cell %d voltage: %.3fV", cell_index, voltage)
 
         return cls(cell_index=cell_index, voltage=voltage)
 
