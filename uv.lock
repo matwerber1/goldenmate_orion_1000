@@ -146,6 +146,7 @@ name = "orion1000-bms"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "coverage" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -173,6 +174,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "coverage", specifier = ">=7.10.4" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7" },
     { name = "pytest", specifier = ">=8.4.1" },

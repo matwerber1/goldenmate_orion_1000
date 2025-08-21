@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+    "coverage>=7.10.4",
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
 ]
