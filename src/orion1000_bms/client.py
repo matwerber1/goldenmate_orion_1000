@@ -257,48 +257,6 @@ class BmsClient:
         resp = cast(MosControlResponse, self.request(req, timeout=timeout))
         return resp.success
 
-    # Convenience methods for backward compatibility
-    def read_total_voltage(self, *, timeout: float | None = None) -> float:
-        """Read total pack voltage (sum of all cells).
-
-        Args:
-            timeout: Optional timeout override
-
-        Returns:
-            Total voltage in volts
-        """
-        voltage_data = self.read_voltage_data(timeout=timeout)
-        return sum(voltage_data.cell_voltages)
-
-    def read_current(self, *, timeout: float | None = None) -> float:
-        """Read pack current.
-
-        Args:
-            timeout: Optional timeout override
-
-        Returns:
-            Current in amperes
-        """
-        current_status = self.read_current_status(timeout=timeout)
-        return current_status.current
-
-    def read_cell_voltage(
-        self, cell_index: int, *, timeout: float | None = None
-    ) -> float:
-        """Read individual cell voltage.
-
-        Args:
-            cell_index: Cell index (0-based)
-            timeout: Optional timeout override
-
-        Returns:
-            Cell voltage in volts
-        """
-        voltage_data = self.read_voltage_data(timeout=timeout)
-        if cell_index < 0 or cell_index >= len(voltage_data.cell_voltages):
-            raise ValueError(f"Invalid cell index: {cell_index}")
-        return voltage_data.cell_voltages[cell_index]
-
     def close(self) -> None:
         """Close the transport connection."""
         self._transport.close()

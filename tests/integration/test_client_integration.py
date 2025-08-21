@@ -27,33 +27,35 @@ def client(fake_server: FakeBmsServer) -> Iterator[BmsClient]:
 
 
 @pytest.mark.phase6
-def test_client_read_total_voltage(client: BmsClient) -> None:
-    """Test client read total voltage integration."""
-    voltage = client.read_total_voltage()
-    assert voltage == 48.0  # 16 cells * 3.0V each
+def test_client_read_voltage_data(client: BmsClient) -> None:
+    """Test client read voltage data integration."""
+    voltage_data = client.read_voltage_data()
+    total_voltage = sum(voltage_data.cell_voltages)
+    assert total_voltage == 48.0  # 16 cells * 3.0V each
 
 
 @pytest.mark.phase6
-def test_client_read_current(client: BmsClient) -> None:
-    """Test client read current integration."""
-    current = client.read_current()
-    assert current == 10.5  # From fake server
+def test_client_read_current_status(client: BmsClient) -> None:
+    """Test client read current status integration."""
+    current_status = client.read_current_status()
+    assert current_status.current == 10.5  # From fake server
 
 
 @pytest.mark.phase6
 def test_client_multiple_requests(client: BmsClient) -> None:
     """Test multiple requests work correctly."""
-    voltage1 = client.read_total_voltage()
-    current = client.read_current()
-    voltage2 = client.read_total_voltage()
+    voltage_data1 = client.read_voltage_data()
+    current_status = client.read_current_status()
+    voltage_data2 = client.read_voltage_data()
 
-    assert voltage1 == 48.0
-    assert current == 10.5
-    assert voltage2 == 48.0
+    assert sum(voltage_data1.cell_voltages) == 48.0
+    assert current_status.current == 10.5
+    assert sum(voltage_data2.cell_voltages) == 48.0
 
 
 @pytest.mark.phase6
 def test_client_with_timeout(client: BmsClient) -> None:
     """Test client requests with timeout."""
-    voltage = client.read_total_voltage(timeout=1.0)
-    assert voltage == 48.0
+    voltage_data = client.read_voltage_data(timeout=1.0)
+    total_voltage = sum(voltage_data.cell_voltages)
+    assert total_voltage == 48.0

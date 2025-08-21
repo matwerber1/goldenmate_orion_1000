@@ -26,13 +26,14 @@ from orion1000_bms.transport.tcp import TcpTransport
 transport = TcpTransport(host="192.168.1.50", port=4001)
 client = BmsClient(transport, address=0x01)
 
-# Read total voltage
-voltage = client.read_total_voltage()
-print(f"Total voltage: {voltage}V")
+# Read voltage data
+voltage_data = client.read_voltage_data()
+total_voltage = sum(voltage_data.cell_voltages)
+print(f"Total voltage: {total_voltage}V")
 
 # Read current
-current = client.read_current()
-print(f"Current: {current}A")
+current_status = client.read_current_status()
+print(f"Current: {current_status.current}A")
 ```
 
 ## CLI Usage

@@ -23,17 +23,18 @@ def main() -> None:
     client = BmsClient(transport, address=address)
 
     try:
-        # Read total voltage
-        voltage = client.read_total_voltage()
-        print(f"Total voltage: {voltage:.1f}V")
+        # Read voltage data
+        voltage_data = client.read_voltage_data()
+        total_voltage = sum(voltage_data.cell_voltages)
+        print(f"Total voltage: {total_voltage:.1f}V")
 
         # Read current
-        current = client.read_current()
-        print(f"Current: {current:.1f}A")
+        current_status = client.read_current_status()
+        print(f"Current: {current_status.current:.1f}A")
 
         # Read first cell voltage
-        cell_voltage = client.read_cell_voltage(0)
-        print(f"Cell 1 voltage: {cell_voltage:.3f}V")
+        if voltage_data.cell_voltages:
+            print(f"Cell 1 voltage: {voltage_data.cell_voltages[0]:.3f}V")
 
     except Exception as e:
         print(f"Error: {e}")

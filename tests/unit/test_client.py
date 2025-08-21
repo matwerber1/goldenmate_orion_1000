@@ -52,9 +52,11 @@ def test_request_basic(client: BmsClient, mock_transport: Mock) -> None:
         payload.extend(struct.pack(">h", 250))
     # Add string count
     payload.append(1)
-    
+
     # Mock response frame
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload))
+    response_frame = build_frame(
+        PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload)
+    )
     mock_transport.send_request.return_value = response_frame
 
     # Send request
@@ -82,8 +84,10 @@ def test_request_with_timeout(client: BmsClient, mock_transport: Mock) -> None:
     for i in range(3):
         payload.extend(struct.pack(">h", 250))
     payload.append(1)
-    
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload))
+
+    response_frame = build_frame(
+        PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload)
+    )
     mock_transport.send_request.return_value = response_frame
 
     req = VoltageRequest()
@@ -108,7 +112,9 @@ def test_request_unsupported_command(client: BmsClient) -> None:
 def test_request_command_mismatch(client: BmsClient, mock_transport: Mock) -> None:
     """Test response with mismatched command."""
     # Response with wrong command (0x03 instead of 0x02)
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x03, b"\x01\xe5")
+    response_frame = build_frame(
+        PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x03, b"\x01\xe5"
+    )
     mock_transport.send_request.return_value = response_frame
 
     req = VoltageRequest()  # Command 0x02
@@ -120,7 +126,7 @@ def test_request_command_mismatch(client: BmsClient, mock_transport: Mock) -> No
 def test_request_spacing() -> None:
     """Test minimum request spacing enforcement."""
     mock_transport = Mock()
-    
+
     # Create voltage response payload
     payload = bytearray()
     for i in range(16):
@@ -128,8 +134,10 @@ def test_request_spacing() -> None:
     for i in range(3):
         payload.extend(struct.pack(">h", 250))
     payload.append(1)
-    
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload))
+
+    response_frame = build_frame(
+        PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload)
+    )
     mock_transport.send_request.return_value = response_frame
 
     client = BmsClient(mock_transport, min_spacing_s=0.1)
@@ -148,68 +156,6 @@ def test_request_spacing() -> None:
     # Should have waited at least min_spacing_s
     elapsed = second_time - first_time
     assert elapsed >= 0.1
-
-
-@pytest.mark.phase6
-def test_read_total_voltage(client: BmsClient, mock_transport: Mock) -> None:
-    """Test read total voltage helper method."""
-    # Create voltage response payload with cell voltages that sum to 48.5V
-    payload = bytearray()
-    # 16 cells at 3.03125V each = 48.5V total
-    for i in range(16):
-        payload.extend(struct.pack(">H", 3031))  # 3.031V in mV
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))
-    payload.append(1)
-    
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload))
-    mock_transport.send_request.return_value = response_frame
-
-    voltage = client.read_total_voltage()
-    assert abs(voltage - 48.496) < 0.01  # Allow for rounding
-
-
-@pytest.mark.phase6
-def test_read_current(client: BmsClient, mock_transport: Mock) -> None:
-    """Test read current helper method."""
-    # Create current status response payload
-    payload = bytearray()
-    payload.append(0x01)  # Status bits
-    payload.extend(struct.pack(">h", 105))  # Current 10.5A
-    payload.append(0x00)  # Protection status
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))  # Temperatures
-    payload.append(0x03)  # MOS states
-    payload.append(0x01)  # Version
-    payload.append(0x00)  # Fault flags
-    
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x03, bytes(payload))
-    mock_transport.send_request.return_value = response_frame
-
-    current = client.read_current()
-    assert current == 10.5
-
-
-@pytest.mark.phase6
-def test_read_cell_voltage(client: BmsClient, mock_transport: Mock) -> None:
-    """Test read cell voltage helper method."""
-    # Create voltage response payload
-    payload = bytearray()
-    # Set cell 3 to 3.456V, others to 3.0V
-    for i in range(16):
-        if i == 3:
-            payload.extend(struct.pack(">H", 3456))  # 3.456V in mV
-        else:
-            payload.extend(struct.pack(">H", 3000))  # 3.0V in mV
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))
-    payload.append(1)
-    
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload))
-    mock_transport.send_request.return_value = response_frame
-
-    voltage = client.read_cell_voltage(3)
-    assert voltage == 3.456
 
 
 @pytest.mark.phase6
