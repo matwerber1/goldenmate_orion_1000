@@ -65,8 +65,8 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 4 – Exceptions & logging
 
-- [x] PENDING_APPROVAL: Create exception hierarchy in `exceptions.py`
-- [x] PENDING_APPROVAL: Implement logger factory in `logging.py` with hex dump support
+- [x] APPROVED: Create exception hierarchy in `exceptions.py`
+- [x] APPROVED: Implement logger factory in `logging.py` with hex dump support
 
 ### Affected Files:
 - src/orion1000_bms/exceptions.py
@@ -78,12 +78,22 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 5 – Commands & registry (initial set)
 
-- [ ] TODO: Define `BaseCommand`/`BaseResponse` Protocols in `commands/base.py`
-- [ ] TODO: Create `CommandId` enum and registry in `commands/registry.py`
-- [ ] TODO: Implement `read_total_voltage.py` command
-- [ ] TODO: Implement `read_cell_voltage.py` command (single-cell and multi-frame)
-- [ ] TODO: Implement `read_current.py` command
-- [ ] TODO: Add tests using example frames from spec as golden vectors
+- [x] PENDING_APPROVAL: Define `BaseCommand`/`BaseResponse` Protocols in `commands/base.py`
+- [x] PENDING_APPROVAL: Create `CommandId` enum and registry in `commands/registry.py`
+- [x] PENDING_APPROVAL: Implement `read_total_voltage.py` command
+- [x] PENDING_APPROVAL: Implement `read_cell_voltage.py` command (single-cell and multi-frame)
+- [x] PENDING_APPROVAL: Implement `read_current.py` command
+- [x] PENDING_APPROVAL: Add tests using example frames from spec as golden vectors
+
+### Affected Files:
+- src/orion1000_bms/commands/base.py
+- src/orion1000_bms/commands/read_cell_voltage.py
+- src/orion1000_bms/commands/read_current.py
+- src/orion1000_bms/commands/read_total_voltage.py
+- src/orion1000_bms/commands/registry.py
+- tests/integration/data/frames/golden_frames.py
+- tests/integration/test_golden_frames.py
+- tests/unit/test_commands.py
 
 ## Phase 6 – Client APIs (sync)
 

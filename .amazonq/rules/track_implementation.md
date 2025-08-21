@@ -21,3 +21,5 @@
 - when beginning or resuming work on a phase from the implementation plan, review the project plan (project_plan.md)
 
 - if pytest or any pytest-related dependencies are missing from the project, use uv to add them
+
+- use the 'pytest' terminal CLI command to run tests
