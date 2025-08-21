@@ -12,8 +12,8 @@
 
 - If you complete a phase or step from the implementation plan and all tests marked for that phase are passing, update it's status in implementation_status.md to PENDING_APPROVAL.
 
-- Only mark a phase or its steps as COMPLETE if I explicitly tell you to do so.
+- Only mark a phase or its steps as APPROVED if I explicitly tell you to do so.
 
-- Before working on a phase, confirm that all prior phases are marked as COMPLETE. If a prior phase is not complete, do not proceed.
+- Before working on a phase, confirm that all prior phases are marked as APPROVED. If a prior phase is not marked as APPROVED, do not proceed.
 
 - When a python file is created or modified as part of an implementation phase, create or update an alphabetical list of affected files in that specific phase's section of the implementation status file.
