@@ -129,3 +129,5 @@ __pycache__/
 EOF
 
 *.pyc
+
+.ruff_cache/
