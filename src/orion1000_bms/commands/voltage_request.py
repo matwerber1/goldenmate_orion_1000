@@ -6,7 +6,7 @@ import struct
 from dataclasses import dataclass
 from typing import List
 from .registry import CommandId, COMMANDS
-from .base import CommandSpec
+from .base import CommandSpec, ResponseBase
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class VoltageRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class VoltageResponse:
+class VoltageResponse(ResponseBase):
     """Response containing cell voltages and temperatures."""
 
     cell_voltages: List[float]  # 16 cell voltages in volts
@@ -36,16 +36,13 @@ class VoltageResponse:
         """Parse voltage data from payload bytes.
 
         Args:
-            payload: 35-byte payload (2 cmd bytes + 32 cell voltages + 6 temperatures + 1 string count)
+            payload: Payload with command bytes + 32 cell voltages + 6 temperatures + 1 string count
 
         Returns:
             VoltageResponse with parsed data
         """
-        if len(payload) != 41:
-            logger.warning(
-                "Invalid payload length for voltage response: %d", len(payload)
-            )
-            raise ValueError(f"Invalid payload length: {len(payload)}")
+        # Validate expected data length: 32 (voltages) + 6 (temps) + 1 (string count) = 39 bytes
+        cls.validate_payload_length(payload, 39)
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]

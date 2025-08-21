@@ -17,6 +17,7 @@ from ..protocol.constants import (
 
 class CommandId(IntEnum):
     """BMS command identifiers (Command Low bytes)."""
+
     VOLTAGE_REQUEST = CMD_VOLTAGE_REQUEST
     CURRENT_STATUS_REQUEST = CMD_CURRENT_STATUS_REQUEST
     CAPACITY_STATUS_REQUEST = CMD_CAPACITY_STATUS_REQUEST

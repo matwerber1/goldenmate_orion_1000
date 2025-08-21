@@ -1,5 +1,6 @@
 """Frame encoding/decoding and checksum functions."""
 
+from dataclasses import asdict
 import logging
 from .constants import START, END, PRODUCT_ID_DEFAULT
 from typing import TYPE_CHECKING
@@ -75,6 +76,7 @@ def decode(raw: bytes) -> "Frame":
             frame.cmd_lo,
             len(raw),
         )
+
         return frame
     except Exception as e:
         logger.exception("Failed to decode frame of length %d", len(raw))

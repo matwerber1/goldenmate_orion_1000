@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from .registry import CommandId, COMMANDS
-from .base import CommandSpec
+from .base import CommandSpec, ResponseBase
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class DisallowChargeRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class MosControlResponse:
+class MosControlResponse(ResponseBase):
     """Response from MOS control commands."""
 
     command_id: int  # Echo of the command
@@ -69,16 +69,13 @@ class MosControlResponse:
         """Parse MOS control response from payload bytes.
 
         Args:
-            payload: 3-byte payload (2 cmd bytes + 1 status byte)
+            payload: Payload with command bytes + 1 status byte
 
         Returns:
             MosControlResponse with command echo and status
         """
-        if len(payload) != 3:
-            logger.warning(
-                "Invalid payload length for MOS control response: %d", len(payload)
-            )
-            raise ValueError(f"Invalid payload length: {len(payload)}")
+        # Validate expected data length: 1 status byte
+        cls.validate_payload_length(payload, 1)
 
         # Command bytes are echoed back
         cmd_hi = payload[0]

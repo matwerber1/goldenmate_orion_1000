@@ -64,28 +64,35 @@ class Frame:
         address = raw[2]
         data_len = raw[3]
 
-        # Validate frame length - data_len now includes checksum and end byte
-        expected_len = (
-            4 + data_len
-        )  # header(4) + data_len (which includes everything after length)
+        # Validate frame length - data_len includes everything after length byte through end byte
+        expected_len = 4 + data_len  # header(4) + data_len bytes
         if len(raw) != expected_len:
             logger.warning("Invalid frame length: %d != %d", len(raw), expected_len)
             raise FrameError(f"Invalid frame length: {len(raw)} != {expected_len}")
 
+        # Validate minimum data_len (cmd_hi + cmd_lo + checksum + end = 4 bytes minimum)
+        if data_len < 4:
+            logger.warning("Data length too short: %d", data_len)
+            raise FrameError(f"Data length too short: {data_len}")
+
         cmd_hi = raw[4]
         cmd_lo = raw[5]
-        payload = raw[6 : 4 + data_len - 2]  # payload excludes checksum and end byte
-        checksum = raw[4 + data_len - 2]  # checksum is 2nd to last byte
-        end = raw[4 + data_len - 1]  # end is last byte
+
+        # Payload is everything between command bytes and checksum
+        payload_end_idx = 4 + data_len - 2  # Exclude checksum and end byte
+        payload = raw[6:payload_end_idx]
+
+        checksum = raw[payload_end_idx]  # checksum is 2nd to last byte
+        end = raw[payload_end_idx + 1]  # end is last byte
 
         if end != END:
             logger.warning("Invalid end byte: 0x%02x", end)
             raise FrameError(f"Invalid end byte: {end:#x}")
+        else:
+            logger.debug("Last byte validation: PASS")
 
-        # Verify checksum
-        checksum_data = raw[
-            3 : 4 + data_len - 2
-        ]  # Length through payload (excluding checksum and end)
+        # Verify checksum - includes length through payload (excluding checksum and end)
+        checksum_data = raw[3:payload_end_idx]
         expected_checksum = xor_checksum(checksum_data)
         if checksum != expected_checksum:
             logger.warning(
@@ -94,9 +101,15 @@ class Frame:
             raise ChecksumError(
                 f"Checksum mismatch: {checksum:#x} != {expected_checksum:#x}"
             )
+        else:
+            logger.debug("Checksum validation: PASS")
 
         logger.debug(
-            "Parsed frame: cmd=0x%02x%02x, addr=0x%02x", cmd_hi, cmd_lo, address
+            "Parsed frame: cmd=0x%02x%02x, addr=0x%02x, payload_len=%d",
+            cmd_hi,
+            cmd_lo,
+            address,
+            len(payload),
         )
         return cls(
             start=start,

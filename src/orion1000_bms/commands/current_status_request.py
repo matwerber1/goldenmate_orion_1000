@@ -6,7 +6,7 @@ import struct
 from dataclasses import dataclass
 from typing import List
 from .registry import CommandId, COMMANDS
-from .base import CommandSpec
+from .base import CommandSpec, ResponseBase
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class CurrentStatusRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class CurrentStatusResponse:
+class CurrentStatusResponse(ResponseBase):
     """Response containing current and status information."""
 
     status_bits: int  # Status bitfield
@@ -40,16 +40,13 @@ class CurrentStatusResponse:
         """Parse current and status data from payload bytes.
 
         Args:
-            payload: 13-byte payload (2 cmd bytes + 10 data bytes)
+            payload: Payload with command bytes + 11 data bytes
 
         Returns:
             CurrentStatusResponse with parsed data
         """
-        if len(payload) != 15:
-            logger.warning(
-                "Invalid payload length for current status response: %d", len(payload)
-            )
-            raise ValueError(f"Invalid payload length: {len(payload)}")
+        # Validate expected data length: 1 + 2 + 1 + 6 + 1 + 1 + 1 = 13 bytes
+        cls.validate_payload_length(payload, 13)
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]

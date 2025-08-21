@@ -5,7 +5,7 @@ import logging
 import struct
 from dataclasses import dataclass
 from .registry import CommandId, COMMANDS
-from .base import CommandSpec
+from .base import CommandSpec, ResponseBase
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class CapacityStatusRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class CapacityStatusResponse:
+class CapacityStatusResponse(ResponseBase):
     """Response containing capacity and status information."""
 
     soc: int  # State of charge (%)
@@ -44,16 +44,13 @@ class CapacityStatusResponse:
         """Parse capacity and status data from payload bytes.
 
         Args:
-            payload: 23-byte payload (2 cmd bytes + 20 data bytes)
+            payload: Payload with command bytes + 21 data bytes
 
         Returns:
             CapacityStatusResponse with parsed data
         """
-        if len(payload) != 23:
-            logger.warning(
-                "Invalid payload length for capacity status response: %d", len(payload)
-            )
-            raise ValueError(f"Invalid payload length: {len(payload)}")
+        # Validate expected data length: 1 + 2*8 + 1 + 1 + 2 = 21 bytes
+        cls.validate_payload_length(payload, 21)
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]

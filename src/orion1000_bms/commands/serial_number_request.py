@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from .registry import CommandId, COMMANDS
-from .base import CommandSpec
+from .base import CommandSpec, ResponseBase
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class SerialNumberRequest:
 
 
 @dataclass(slots=True, frozen=True)
-class SerialNumberResponse:
+class SerialNumberResponse(ResponseBase):
     """Response containing device serial number."""
 
     serial_number: str  # ASCII serial number string
@@ -38,10 +38,7 @@ class SerialNumberResponse:
             SerialNumberResponse with parsed serial number
         """
         if len(payload) < 3:
-            logger.warning(
-                "Invalid payload length for serial number response: %d", len(payload)
-            )
-            raise ValueError(f"Invalid payload length: {len(payload)}")
+            raise ValueError(f"Payload too short for serial number: {len(payload)}")
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]
@@ -49,13 +46,12 @@ class SerialNumberResponse:
         # First byte is length of ASCII string
         length = data[0]
 
-        if len(data) < 1 + length:
-            logger.warning(
-                "Insufficient data for serial number: expected %d, got %d",
-                1 + length,
-                len(data),
+        # Validate we have enough data for the specified length
+        expected_data_bytes = 1 + length  # length byte + ASCII data
+        if len(data) < expected_data_bytes:
+            raise ValueError(
+                f"Insufficient data for serial number: expected {expected_data_bytes}, got {len(data)}"
             )
-            raise ValueError(f"Insufficient data for serial number")
 
         # Extract ASCII string
         serial_bytes = data[1 : 1 + length]

@@ -157,3 +157,4 @@ This document tracks the completion status of each phase and step outlined in th
 - Updated all response data structures to match detailed layouts in updated specification.
 - Removed old command implementations (read_total_voltage, read_current, read_cell_voltage) and replaced with specification-compliant commands.
 - Updated client API to provide both new methods and backward-compatible convenience methods.
+- Refactored response parsing logic to remove hard-coded payload length expectations and implement proper length-based parsing using the length byte (byte 4) from the protocol specification.
