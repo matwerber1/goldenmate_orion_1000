@@ -103,10 +103,10 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 7 – CLI (optional but handy)
 
-- [ ] TODO: Create Typer-based CLI in `cli.py`
-- [ ] TODO: Add `bms status` command
-- [ ] TODO: Add `bms raw` command for hex frame sending
-- [ ] TODO: Add `bms cells` command
+- [x] SKIPPED: Create Typer-based CLI in `cli.py`
+- [x] SKIPPED: Add `bms status` command
+- [x] SKIPPED: Add `bms raw` command for hex frame sending
+- [x] SKIPPED: Add `bms cells` command
 
 ## Phase 8 – Testing strategy
 

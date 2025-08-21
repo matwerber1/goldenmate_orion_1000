@@ -1,7 +1,14 @@
 {
   "name": "default",
   "description": "Default agent",
-  "resources": ["file://AmazonQ.md", "file://.amazonq/rules/**/*.md", "file://docs/**/*.md"],
+  "resources": [
+    "file://AmazonQ.md",
+    "file://README.md",
+    "file://.amazonq/rules/**/*.md",
+    "file://docs/**/*.md",
+    "file://src/**/*.py",
+    "file://tests/**/*.py"
+  ],
   "tools": [],
   "allowedTools": [],
   "useLegacyMcpJson": true
