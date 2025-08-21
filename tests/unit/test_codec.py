@@ -5,14 +5,14 @@ from orion1000_bms.protocol.codec import build_frame, decode, xor_checksum
 from orion1000_bms.protocol.constants import PRODUCT_ID_DEFAULT
 
 
-def test_build_frame_minimal():
+def test_build_frame_minimal() -> None:
     """Test building minimal frame with no payload."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
     expected = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5"
     assert raw == expected
 
 
-def test_build_frame_with_payload():
+def test_build_frame_with_payload() -> None:
     """Test building frame with payload."""
     payload = b"\x12\x34"
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, payload)
@@ -33,7 +33,7 @@ def test_build_frame_with_payload():
     assert raw[-2] == expected_checksum
 
 
-def test_decode_round_trip():
+def test_decode_round_trip() -> None:
     """Test decode matches build_frame output."""
     payload = b"\xAB\xCD\xEF"
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x05, 0x12, 0x34, payload)
@@ -46,7 +46,7 @@ def test_decode_round_trip():
     assert frame.payload == payload
 
 
-def test_build_frame_different_product_id():
+def test_build_frame_different_product_id() -> None:
     """Test building frame with different product ID."""
     raw = build_frame(0xAA, 0x02, 0x05, 0x06, b"\xFF")
     frame = decode(raw)
@@ -58,7 +58,7 @@ def test_build_frame_different_product_id():
     assert frame.payload == b"\xFF"
 
 
-def test_build_frame_max_values():
+def test_build_frame_max_values() -> None:
     """Test building frame with maximum byte values."""
     raw = build_frame(0xFF, 0xFF, 0xFF, 0xFF, b"\xFF\xFF")
     frame = decode(raw)
