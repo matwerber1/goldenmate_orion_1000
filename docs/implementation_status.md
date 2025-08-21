@@ -78,12 +78,12 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 5 – Commands & registry (initial set)
 
-- [x] PENDING_APPROVAL: Define `BaseCommand`/`BaseResponse` Protocols in `commands/base.py`
-- [x] PENDING_APPROVAL: Create `CommandId` enum and registry in `commands/registry.py`
-- [x] PENDING_APPROVAL: Implement `read_total_voltage.py` command
-- [x] PENDING_APPROVAL: Implement `read_cell_voltage.py` command (single-cell and multi-frame)
-- [x] PENDING_APPROVAL: Implement `read_current.py` command
-- [x] PENDING_APPROVAL: Add tests using example frames from spec as golden vectors
+- [x] APPROVED: Define `BaseCommand`/`BaseResponse` Protocols in `commands/base.py`
+- [x] APPROVED: Create `CommandId` enum and registry in `commands/registry.py`
+- [x] APPROVED: Implement `read_total_voltage.py` command
+- [x] APPROVED: Implement `read_cell_voltage.py` command (single-cell and multi-frame)
+- [x] APPROVED: Implement `read_current.py` command
+- [x] APPROVED: Add tests using example frames from spec as golden vectors
 
 ### Affected Files:
 - src/orion1000_bms/commands/base.py
@@ -97,9 +97,15 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 6 – Client APIs (sync)
 
-- [ ] TODO: Implement `BmsClient` with generic `request()` method
-- [ ] TODO: Add helper methods for common operations
-- [ ] TODO: Enforce ≥200ms spacing between requests with configurable overrides
+- [x] PENDING_APPROVAL: Implement `BmsClient` with generic `request()` method
+- [x] PENDING_APPROVAL: Add helper methods for common operations
+- [x] PENDING_APPROVAL: Enforce ≥200ms spacing between requests with configurable overrides
+
+### Affected Files:
+- src/orion1000_bms/__init__.py
+- src/orion1000_bms/client.py
+- tests/integration/test_client_integration.py
+- tests/unit/test_client.py
 
 ## Phase 7 – CLI (optional but handy)
 

@@ -6,10 +6,11 @@
     "file://README.md",
     "file://.amazonq/rules/**/*.md",
     "file://docs/**/*.md",
+    "file://main.py",
     "file://src/**/*.py",
     "file://tests/**/*.py"
   ],
-  "tools": [],
-  "allowedTools": [],
+  "tools": ["*"],
+  "allowedTools": ["source .venv/bin/activate", "pytest", "ruff"],
   "useLegacyMcpJson": true
 }
