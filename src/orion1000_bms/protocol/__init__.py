@@ -1,0 +1,1 @@
+"""Protocol layer for BMS frame handling."""

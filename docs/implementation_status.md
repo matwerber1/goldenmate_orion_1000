@@ -4,9 +4,21 @@ This document tracks the completion status of each phase and step outlined in th
 
 ## Phase 0 – Bootstrap & tooling
 
-- [ ] TODO: Create `src/` layout shown above
-- [ ] TODO: Configure `pyproject.toml` with build settings, dev deps, and tool configurations
-- [ ] TODO: Add `README.md` with minimal example and `LICENSE`
+- [x] PENDING_APPROVAL: Create `src/` layout shown above
+- [x] PENDING_APPROVAL: Configure `pyproject.toml` with build settings, dev deps, and tool configurations
+- [x] PENDING_APPROVAL: Add `README.md` with minimal example and `LICENSE`
+
+### Affected Files:
+- CHANGELOG.md
+- LICENSE
+- README.md
+- pyproject.toml
+- src/orion1000_bms/__init__.py
+- src/orion1000_bms/commands/__init__.py
+- src/orion1000_bms/protocol/__init__.py
+- src/orion1000_bms/py.typed
+- src/orion1000_bms/transport/__init__.py
+- tests/conftest.py
 
 ## Phase 1 – Protocol constants & checksum
 
