@@ -52,7 +52,7 @@ All communication frames follow the manufacturer’s standard structure:
 
 **Read Total Voltage**
 
-- **Request Frame:**  
+- **Request Frame:**
   `EA D1 01 02 03 00 D2 F5`
 
   - `[EA]` Start Byte
@@ -63,7 +63,7 @@ All communication frames follow the manufacturer’s standard structure:
   - `[D2]` Checksum (D1 XOR 01 XOR 02 XOR 03 XOR 00 = D2)
   - `[F5]` End Byte
 
-- **Response Frame (example: 51.2 V):**  
+- **Response Frame (example: 51.2 V):**
   `EA D1 01 04 03 00 13 20 34 F5`
   - `[EA]` Start Byte
   - `[D1]` Product ID
@@ -77,7 +77,7 @@ All communication frames follow the manufacturer’s standard structure:
 
 **Read Single-Cell Voltage**
 
-- **Request Frame:**  
+- **Request Frame:**
   `EA D1 01 02 03 01 D3 F5`
 
   - `[EA]` Start Byte
@@ -88,7 +88,7 @@ All communication frames follow the manufacturer’s standard structure:
   - `[D3]` Checksum (D1 XOR 01 XOR 02 XOR 03 XOR 01 = D3)
   - `[F5]` End Byte
 
-- **Response Frame (example: Cell 1 = 3.45 V):**  
+- **Response Frame (example: Cell 1 = 3.45 V):**
   `EA D1 01 04 03 01 0D 79 2F F5`
   - `[EA]` Start Byte
   - `[D1]` Product ID
@@ -114,7 +114,7 @@ _Note: Command codes are from the original Chinese specification._
 
 **Read Parameters**
 
-- **Request Frame:**  
+- **Request Frame:**
   `EA D1 01 02 04 01 D4 F5`
 
   - `[EA]` Start Byte
@@ -125,7 +125,7 @@ _Note: Command codes are from the original Chinese specification._
   - `[D4]` Checksum (D1 XOR 01 XOR 02 XOR 04 XOR 01 = D4)
   - `[F5]` End Byte
 
-- **Response Frame (example parameters):**  
+- **Response Frame (example parameters):**
   `EA D1 01 06 04 01 00 64 00 32 87 F5`
   - `[EA]` Start Byte
   - `[D1]` Product ID
@@ -152,7 +152,7 @@ _Note: Command codes are from the original Chinese specification._
 
 **Read Protection Status**
 
-- **Request Frame:**  
+- **Request Frame:**
   `EA D1 01 02 05 00 D7 F5`
 
   - `[EA]` Start Byte
@@ -163,7 +163,7 @@ _Note: Command codes are from the original Chinese specification._
   - `[D7]` Checksum (D1 XOR 01 XOR 02 XOR 05 XOR 00 = D7)
   - `[F5]` End Byte
 
-- **Response Frame (example: status = 0x01):**  
+- **Response Frame (example: status = 0x01):**
   `EA D1 01 03 05 00 01 D3 F5`
   - `[EA]` Start Byte
   - `[D1]` Product ID
@@ -199,9 +199,9 @@ Error responses follow the same frame structure as normal responses, but the **D
 
 **Invalid Command (0x80)**
 
-- **Request Frame (nonsensical command):**  
+- **Request Frame (nonsensical command):**
   `EA D1 01 02 03 FF D0 F5`
-- **Response Frame:**  
+- **Response Frame:**
   `EA D1 01 03 03 FF 80 58 F5`
   - `[EA]` Start Byte
   - `[D1]` Product ID
@@ -214,18 +214,18 @@ Error responses follow the same frame structure as normal responses, but the **D
 
 **Checksum Error (0x82)**
 
-- **Request Frame (with wrong checksum):**  
+- **Request Frame (with wrong checksum):**
   `EA D1 01 02 03 00 00 F5`
-- **Response Frame:**  
+- **Response Frame:**
   `EA D1 01 03 03 00 82 57 F5`
   - `[82]` Data (error code = checksum error)
   - Checksum is recalculated and valid.
 
 **System Busy (0x84)**
 
-- **Request Frame:**  
+- **Request Frame:**
   `EA D1 01 02 03 00 D2 F5`
-- **Response Frame:**  
+- **Response Frame:**
   `EA D1 01 03 03 00 84 55 F5`
   - `[84]` Data (error code = system busy).
 
