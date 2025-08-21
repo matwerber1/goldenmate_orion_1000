@@ -3,13 +3,16 @@
 from __future__ import annotations
 import threading
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .commands.base import BaseCommand, BaseResponse
 from .commands.registry import COMMANDS, CommandId
-from .commands.read_cell_voltage import ReadCellVoltageRequest
-from .commands.read_current import ReadCurrentRequest
-from .commands.read_total_voltage import ReadTotalVoltageRequest
+from .commands.read_cell_voltage import ReadCellVoltageRequest, ReadCellVoltageResponse
+from .commands.read_current import ReadCurrentRequest, ReadCurrentResponse
+from .commands.read_total_voltage import (
+    ReadTotalVoltageRequest,
+    ReadTotalVoltageResponse,
+)
 from .exceptions import UnsupportedCommandError
 from .logging import get_logger
 from .protocol.codec import build_frame
@@ -69,10 +72,11 @@ class BmsClient:
                 time.sleep(self._min_spacing_s - elapsed)
 
             # Look up command spec
-            if req.command_id not in COMMANDS:
+            cmd_id = CommandId(req.command_id)
+            if cmd_id not in COMMANDS:
                 raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
 
-            spec = COMMANDS[req.command_id]
+            spec = COMMANDS[cmd_id]
 
             # Build request frame
             cmd_hi = (req.command_id >> 8) & 0xFF
@@ -113,7 +117,7 @@ class BmsClient:
             Total voltage in volts
         """
         req = ReadTotalVoltageRequest()
-        resp = self.request(req, timeout=timeout)
+        resp = cast(ReadTotalVoltageResponse, self.request(req, timeout=timeout))
         return resp.voltage
 
     def read_current(self, *, timeout: float | None = None) -> float:
@@ -126,7 +130,7 @@ class BmsClient:
             Current in amperes
         """
         req = ReadCurrentRequest()
-        resp = self.request(req, timeout=timeout)
+        resp = cast(ReadCurrentResponse, self.request(req, timeout=timeout))
         return resp.current
 
     def read_cell_voltage(
@@ -142,7 +146,7 @@ class BmsClient:
             Cell voltage in volts
         """
         req = ReadCellVoltageRequest(cell_index=cell_index)
-        resp = self.request(req, timeout=timeout)
+        resp = cast(ReadCellVoltageResponse, self.request(req, timeout=timeout))
         return resp.voltage
 
     def close(self) -> None:
