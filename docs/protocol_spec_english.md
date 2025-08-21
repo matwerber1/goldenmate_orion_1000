@@ -1,331 +1,246 @@
-# Orion 1000 Battery Management System (BMS) Protocol Specification
+# Orion 1000 Battery Management System (BMS) Software Protection Board Communication Protocol
 
 ## Overview
 
-This document describes the serial communication protocol for the Battery Management System (BMS) of the Orion 1000 battery model manufactured by GoldenMate.
+This document specifies the communication protocol for the Software Protection Board of the Orion 1000 Battery Management System (BMS). It defines the serial and CAN communication formats, commands, responses, and timing requirements to interact with the Orion 1000 BMS.
 
 ## Communication Parameters
 
-- **Baud Rate**: 9600
-- **Data Bits**: 8
-- **Stop Bits**: 1
-- **Parity**: None
-- **Flow Control**: None
+- **RS485/RS232/UART**: 9600 baud, 8 data bits, no parity, 1 stop bit (8N1)
+- **CAN 2.0**: 11-bit Identifier, 250 kbps (may vary depending on project)
+- The host must wait at least **100 ms** between scan commands to avoid bus conflicts.
 
 ## Protocol Structure
 
 ### Frame Format
 
-All communication frames follow the manufacturer’s standard structure:
+All frames follow this structure:
 
 ```
-[Start Byte] [Product ID] [Address] [Data Length] [Command High] [Command Low] [Data] [Checksum] [End Byte]
+[Start] [Product ID] [Address] [Length] [Command High=0xFF] [Command Low] [Data...] [Checksum] [End]
 ```
 
-### Field Descriptions
-
-- **Start Byte**: Frame start identifier (0xEA)
-- **Product ID**: Identifies the Orion 1000 battery (1 byte, 0xD1)
-- **Address**: Device address (1 byte), supports multiple Orion 1000 units on the same bus
-- **Data Length**: Length of command and data fields combined (1 byte)
-- **Command High**: High byte of the command code (1 byte)
-- **Command Low**: Low byte of the command code (1 byte)
+- **Start**: Frame start byte (0xEA)
+- **Product ID**: Identifies the Orion 1000 device (1 byte, 0xD1)
+- **Address**: Device address (1 byte), supports multiple devices on the same bus
+- **Length**: Length of the command and data fields combined (1 byte)
+- **Command High**: Always 0xFF (1 byte)
+- **Command Low**: Command code (1 byte)
 - **Data**: Command-specific data (variable length)
-- **Checksum**: Single-byte XOR of all bytes from Product ID through Data
-- **End Byte**: Frame end identifier (0xF5)
+- **Checksum**: XOR of all bytes from **Length** through the last data byte (does NOT include Product ID or Address)
+- **End**: Frame end byte (0xF5)
 
-## Data Encoding
+### Checksum Calculation
 
-| Data Type    | Unit              | Encoding Notes                                                               |
-| ------------ | ----------------- | ---------------------------------------------------------------------------- |
-| Voltage      | Volts (V)         | Encoded in deci-volts (0.1 V units) or milli-volts (mV) depending on command |
-| Current      | Amperes (A)       | Encoded in deci-amperes (0.1 A units)                                        |
-| Temperature  | Degrees Celsius   | Encoded as signed byte or word, unit depends on command                      |
-| Capacity     | Ampere-hours (Ah) | Encoded in deci-ampere-hours (0.1 Ah units)                                  |
-| Cycle Count  | Count             | Integer value                                                                |
-| Status Codes | N/A               | Bitfields or enumerations as per specification                               |
-
-## Command Set
-
-### Battery Status Commands
-
-| Command                       | High | Low  | Description                       |
-| ----------------------------- | ---- | ---- | --------------------------------- |
-| Read Total Voltage            | 0x03 | 0x00 | Query total battery voltage       |
-| Read Single-Cell Voltage      | 0x03 | 0x01 | Query voltage of individual cells |
-| Read Charge/Discharge Current | 0x03 | 0x02 | Query charge/discharge current    |
-| Read State of Charge (SOC)    | 0x03 | 0x03 | Query state of charge             |
-| Read State of Health (SOH)    | 0x03 | 0x04 | Query state of health             |
-| Read MOSFET Temperature       | 0x03 | 0x05 | Query MOSFET temperature          |
-| Read Ambient Temperature      | 0x03 | 0x06 | Query ambient temperature         |
-| Read Total Capacity           | 0x03 | 0x07 | Query total battery capacity      |
-| Read Remaining Capacity       | 0x03 | 0x08 | Query remaining battery capacity  |
-| Read Cycle Count              | 0x03 | 0x09 | Query battery cycle count         |
-| Read Manufacturing Info       | 0x03 | 0x0A | Query manufacturing information   |
-
-#### Example Frame
-
-**Read Total Voltage**
-
-- **Request Frame:**
-  `EA D1 01 02 03 00 D2 F5`
-
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[02]` Data Length
-  - `[03 00]` Command High/Low (Read Total Voltage)
-  - `[D2]` Checksum (D1 XOR 01 XOR 02 XOR 03 XOR 00 = D2)
-  - `[F5]` End Byte
-
-- **Response Frame (example: 51.2 V):**
-  `EA D1 01 04 03 00 13 20 34 F5`
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[04]` Data Length
-  - `[03 00]` Command High/Low
-  - `[13 20]` Data (0x1320 = 4896 deci-volts, i.e., 489.6V → may be used as 51.2V if encoded as 512 deci-volts)
-    - **Voltage encoded in deci-volts (0.1 V units)**
-  - `[34]` Checksum (D1 XOR 01 XOR 04 XOR 03 XOR 00 XOR 13 XOR 20 = 34)
-  - `[F5]` End Byte
-
-**Read Single-Cell Voltage**
-
-- **Request Frame:**
-  `EA D1 01 02 03 01 D3 F5`
-
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[02]` Data Length
-  - `[03 01]` Command High/Low (Read Single-Cell Voltage)
-  - `[D3]` Checksum (D1 XOR 01 XOR 02 XOR 03 XOR 01 = D3)
-  - `[F5]` End Byte
-
-- **Response Frame (example: Cell 1 = 3.45 V):**
-  `EA D1 01 04 03 01 0D 79 2F F5`
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[04]` Data Length
-  - `[03 01]` Command High/Low
-  - `[0D 79]` Data (0x0D79 = 3449 deci-mV = 3.449V, typically 3450 = 3.45V)
-    - **Voltage encoded in milli-volts or deci-volts as per spec**
-  - `[2F]` Checksum (D1 XOR 01 XOR 04 XOR 03 XOR 01 XOR 0D XOR 79 = 2F)
-  - `[F5]` End Byte
-
-### Multi-frame Response Example (Read All Cell Voltages)
-
-- **Response Frame 1:**
-  `EA D1 01 0C 03 01 0D 79 0D 7A 0D 7B 0D 7C 0D 7D 0D 7E 0D 7F 9A F5`
-
-  - `[0C]` Data Length (12 bytes: command + 10 bytes data)
-  - `[0D 79]` Cell 1 voltage
-  - `[0D 7A]` Cell 2 voltage
-  - `[0D 7B]` Cell 3 voltage
-  - `[0D 7C]` Cell 4 voltage
-  - `[0D 7D]` Cell 5 voltage
-  - `[0D 7E]` Cell 6 voltage
-  - `[0D 7F]` Cell 7 voltage
-  - `[9A]` Checksum
-  - `[F5]` End Byte
-
-- **Response Frame 2:**
-  `EA D1 01 08 03 01 0D 80 0D 81 0D 82 0D 83 5B F5`
-  - `[08]` Data Length (8 bytes: command + 6 bytes data)
-  - `[0D 80]` Cell 8 voltage
-  - `[0D 81]` Cell 9 voltage
-  - `[0D 82]` Cell 10 voltage
-  - `[0D 83]` Cell 11 voltage
-  - `[5B]` Checksum
-  - `[F5]` End Byte
-
-### Configuration Commands
-
-| Command         | High | Low  | Description                                                                                 |
-| --------------- | ---- | ---- | ------------------------------------------------------------------------------------------- |
-| Set Parameters  | 0x04 | 0x00 | Configure battery operation parameters (multi-byte payload, requires checksum verification) |
-| Read Parameters | 0x04 | 0x01 | Query current configuration (multi-byte payload, requires checksum verification)            |
-| Reset System    | 0x04 | 0x02 | Perform system reset                                                                        |
-
-_Note: Command codes are from the original Chinese specification._
-
-#### Example Frame
-
-**Read Parameters**
-
-- **Request Frame:**
-  `EA D1 01 02 04 01 D4 F5`
-
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[02]` Data Length
-  - `[04 01]` Command High/Low (Read Parameters)
-  - `[D4]` Checksum (D1 XOR 01 XOR 02 XOR 04 XOR 01 = D4)
-  - `[F5]` End Byte
-
-- **Response Frame (example parameters):**
-  `EA D1 01 06 04 01 00 64 00 32 87 F5`
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[06]` Data Length
-  - `[04 01]` Command High/Low
-  - `[00 64 00 32]` Data (example: 0x0064 = 100, 0x0032 = 50; parameter encoding per spec)
-  - `[87]` Checksum (D1 XOR 01 XOR 06 XOR 04 XOR 01 XOR 00 XOR 64 XOR 00 XOR 32 = 87)
-  - `[F5]` End Byte
-
-#### Parameter Ranges
-
-| Parameter          | Min | Max | Unit      | Description                     |
-| ------------------ | --- | --- | --------- | ------------------------------- |
-| Overvoltage Limit  | 3.6 | 4.3 | Volts     | Maximum allowed cell voltage    |
-| Undervoltage Limit | 2.5 | 3.0 | Volts     | Minimum allowed cell voltage    |
-| Charge Current     | 0   | 100 | Amperes   | Max charge current              |
-| Discharge Current  | 0   | 100 | Amperes   | Max discharge current           |
-| Temperature Limit  | -20 | 60  | Degrees C | Max allowed temperature         |
-| SOC Alarm Level    | 0   | 100 | Percent   | State of charge alarm threshold |
-
-### Protection Commands
-
-| Command                | High | Low  | Description                      |
-| ---------------------- | ---- | ---- | -------------------------------- |
-| Read Protection Status | 0x05 | 0x00 | Query protection system status   |
-| Read Warning Status    | 0x05 | 0x01 | Query current warning conditions |
-| Read Fault Codes       | 0x05 | 0x02 | Query fault code details         |
-| Clear Alarms           | 0x05 | 0x03 | Clear active alarm conditions    |
-| Set Protection Limits  | 0x05 | 0x04 | Configure protection thresholds  |
-
-_Note: Command codes are from the original Chinese specification._
-
-#### Example Frame
-
-**Read Protection Status**
-
-- **Request Frame:**
-  `EA D1 01 02 05 00 D7 F5`
-
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[02]` Data Length
-  - `[05 00]` Command High/Low (Read Protection Status)
-  - `[D7]` Checksum (D1 XOR 01 XOR 02 XOR 05 XOR 00 = D7)
-  - `[F5]` End Byte
-
-- **Response Frame (example: status = 0x01):**
-  `EA D1 01 03 05 00 01 D3 F5`
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[03]` Data Length
-  - `[05 00]` Command High/Low
-  - `[01]` Data (status code)
-  - `[D3]` Checksum (D1 XOR 01 XOR 03 XOR 05 XOR 00 XOR 01 = D3)
-  - `[F5]` End Byte
-
-#### Protection / Warning / Fault Bit Definitions
-
-| Bit | Description                       |
-| --- | --------------------------------- |
-| 0   | Overvoltage protection active     |
-| 1   | Undervoltage protection active    |
-| 2   | Overcurrent protection active     |
-| 3   | Short circuit protection active   |
-| 4   | Overtemperature protection active |
-| 5   | Communication fault               |
-| 6   | Hardware fault                    |
-| 7   | Reserved                          |
-
-- Each bit corresponds to a specific protection or warning condition.
-- Multiple bits may be set simultaneously to indicate combined states.
-
-## Response Codes
-
-| Code (hex) | Meaning                |
-| ---------- | ---------------------- |
-| 0x00       | Success                |
-| 0x80       | Invalid command        |
-| 0x81       | Data length error      |
-| 0x82       | Checksum error         |
-| 0x83       | Parameter out of range |
-| 0x84       | System busy            |
-
-## Error Handling
-
-- All commands must receive acknowledgment within 100 ms timeout
-- Retransmit up to 3 times if no response received
-- Discard frames with invalid start or end markers
-- Retry mechanism for failed communications
-- Error logging for diagnostic purposes
-
-### Error Response Examples
-
-Error responses follow the same frame structure as normal responses, but the **Data** field contains an error code defined in the Response Codes table.
-
-**Invalid Command (0x80)**
-
-- **Request Frame (nonsensical command):**
-  `EA D1 01 02 03 FF D0 F5`
-- **Response Frame:**
-  `EA D1 01 03 03 FF 80 58 F5`
-  - `[EA]` Start Byte
-  - `[D1]` Product ID
-  - `[01]` Address
-  - `[03]` Data Length
-  - `[03 FF]` Command High/Low (invalid command attempted)
-  - `[80]` Data (error code = invalid command)
-  - `[58]` Checksum (D1 XOR 01 XOR 03 XOR 03 XOR FF XOR 80 = 58)
-  - `[F5]` End Byte
-
-**Checksum Error (0x82)**
-
-- **Request Frame (with wrong checksum):**
-  `EA D1 01 02 03 00 00 F5`
-- **Response Frame:**
-  `EA D1 01 03 03 00 82 57 F5`
-  - `[82]` Data (error code = checksum error)
-  - Checksum is recalculated and valid.
-
-**System Busy (0x84)**
-
-- **Request Frame:**
-  `EA D1 01 02 03 00 D2 F5`
-- **Response Frame:**
-  `EA D1 01 03 03 00 84 55 F5`
-  - `[84]` Data (error code = system busy).
-
-_Note: In all error responses, the command bytes are echoed, and the error code is returned in the data field. The checksum is always valid, calculated over the full frame._
-
-#### Checksum Example
-
-The checksum byte is calculated as the XOR of all bytes from the Product ID through the Data bytes. For example, in the frame:
-
-`EA D1 01 02 03 00 D2 F5`
-
-The checksum `D2` is computed as:
-
-`D1 XOR 01 XOR 02 XOR 03 XOR 00 = D2`
-
-This ensures data integrity and allows detection of transmission errors.
-
-## Implementation Notes
-
-- Ensure at least 200 ms spacing between requests
-- Support multi-frame responses for large data sets
-- Verify address field supports multiple Orion 1000 units on the same bus
-- Implement appropriate error handling
-- Validate all received data
-- Follow safety protocols for battery management
-
-## Special Notes
-
-- **Start Byte** = 0xEA
-- **End Byte** = 0xF5
-- **Product ID for Orion 1000** = 0xD1
+The checksum is computed as the XOR of all bytes starting from the **Length** byte up to the last byte of the data payload, including the command bytes (Command High and Command Low). Product ID and Address are **not** included in the checksum calculation.
 
 ---
 
-_Note: This is a translated version of the original Chinese specification. For complete technical details, refer to the original documentation._
+## Command Set
+
+| Command High | Command Low | Description                    |
+| ------------ | ----------- | ------------------------------ |
+| 0xFF         | 0x02        | Voltage Request                |
+| 0xFF         | 0x03        | Current and Status Request     |
+| 0xFF         | 0x04        | Capacity and Status Request    |
+| 0xFF         | 0x11        | Serial Number Request          |
+| 0xFF         | 0x19        | Allow Discharge (Open MOS)     |
+| 0xFF         | 0x1A        | Disallow Discharge (Close MOS) |
+| 0xFF         | 0x1B        | Allow Charge                   |
+| 0xFF         | 0x1C        | Disallow Charge                |
+
+---
+
+## Response Packet Definitions
+
+### Voltage Data Packet (Response to 0xFF 0x02)
+
+- **Data Fields:**
+  - Cell Voltages: 16 cells, each 2 bytes (uint16_t), unit: millivolts (mV)
+  - Temperature Probes: 3 probes, each 2 bytes (int16_t), unit: 0.1°C
+  - System String Count: 1 byte (number of battery strings)
+- **Length**: 36 bytes (Command High + Command Low + 32 bytes data + checksum)
+
+- **Example Data Layout:**
+
+| Offset | Field               | Size (bytes) | Description                 |
+| ------ | ------------------- | ------------ | --------------------------- |
+| 0      | Command High (0xFF) | 1            | Command High byte           |
+| 1      | Command Low (0x02)  | 1            | Command Low byte            |
+| 2-33   | Cell Voltages       | 32 (16×2)    | Voltages of 16 cells in mV  |
+| 34-39  | Temperature Probes  | 6 (3×2)      | Temperatures in 0.1°C units |
+| 40     | System String Count | 1            | Number of battery strings   |
+
+### Current and Status Data Packet (Response to 0xFF 0x03)
+
+- **Data Fields:**
+
+  - Status Bits: 1 byte (bitfield indicating battery and MOSFET status)
+  - Current: 2 bytes (int16_t), unit: 0.1 A (positive for discharge, negative for charge)
+  - Protection Status: 1 byte (bitfield of protection states)
+  - Temperatures: 3 probes, each 2 bytes (int16_t), unit: 0.1°C
+  - MOS States: 1 byte (bitfield indicating MOSFET on/off states)
+  - Version: 1 byte (hardware or firmware version)
+  - Fault Flags: 1 byte (bitfield of current fault conditions)
+
+- **Length**: 13 bytes (Command High + Command Low + 10 bytes data + checksum)
+
+### Capacity and Status Data Packet (Response to 0xFF 0x04)
+
+- **Data Fields:**
+
+  - SOC (State of Charge): 1 byte (%)
+  - Design Capacity: 2 bytes (uint16_t), unit: Ah × 10 (decahours)
+  - Full Capacity: 2 bytes (uint16_t), unit: Ah × 10
+  - Remaining Capacity: 2 bytes (uint16_t), unit: Ah × 10
+  - Cycle Count: 2 bytes (uint16_t)
+  - Charge Time: 2 bytes (uint16_t), minutes
+  - Discharge Time: 2 bytes (uint16_t), minutes
+  - Max Voltage: 2 bytes (uint16_t), mV
+  - Min Voltage: 2 bytes (uint16_t), mV
+  - Hardware Version: 1 byte
+  - Scheme ID: 1 byte (configuration scheme identifier)
+  - Reserved: 2 bytes (reserved for future use)
+
+- **Length**: 23 bytes (Command High + Command Low + 20 bytes data + checksum)
+
+### Serial Number Packet (Response to 0xFF 0x11)
+
+- **Data Fields:**
+
+  - Length: 1 byte (length of ASCII string)
+  - Serial Number: Variable length ASCII string (length as specified)
+
+- **Length**: Variable (Command High + Command Low + Length + ASCII data + checksum)
+
+### MOS Control Response (Response to Commands 0xFF 0x19, 0x1A, 0x1B, 0x1C)
+
+- The MOS control commands (allow/disallow charge/discharge) must respond within **200 ms**.
+- Response frame echoes the command with a status byte:
+  - 0x00 = Success
+  - Other values indicate failure (specific codes not defined in spec)
+
+---
+
+## CAN Bus Protocol
+
+- **CAN IDs:**
+
+  - 0x0001: Start frame (indicates beginning of a multi-frame packet)
+  - 0x0002: Data frame(s) (up to 32 frames)
+  - 0x0003: End frame (indicates end of multi-frame packet)
+
+- **Multi-frame Rules:**
+
+  - Maximum 8 bytes per CAN frame
+  - Up to 32 frames per packet (max 256 bytes total)
+  - Data is split sequentially across frames 0x0002
+
+- **Example: Voltage Request and Response**
+
+  - Host sends single CAN frame with ID 0x0001 containing the voltage request command:
+
+    ```
+    ID: 0x0001
+    Data: EA D1 01 02 FF 02 XX F5
+    ```
+
+    (XX = checksum calculated over Length through Command/Data)
+
+  - Device responds with multiple CAN frames:
+    - ID 0x0002 frames containing voltage data split into 8-byte chunks
+    - Final frame with ID 0x0003 indicating end of transmission
+
+---
+
+## Examples
+
+### Voltage Request Example
+
+- **Request Frame (UART/RS485):**
+
+  ```
+  EA D1 01 02 FF 02 F5
+  ```
+
+  - Start: EA
+  - Product ID: D1
+  - Address: 01
+  - Length: 02 (Command High + Command Low)
+  - Command: FF 02 (Voltage Request)
+  - Checksum: XOR of Length, Command High, Command Low = 02 XOR FF XOR 02 = FD
+  - End: F5
+
+  Correct full frame with checksum:
+
+  ```
+  EA D1 01 02 FF 02 FD F5
+  ```
+
+- **Response Frame (example with 16 cell voltages and temperatures):**
+  ```
+  EA D1 01 24 FF 02 0C 34 0C 35 0C 36 0C 37 0C 38 0C 39 0C 3A 0C 3B 0C 3C 0C 3D 0C 3E 0C 3F 00 64 00 65 00 66 02 F5
+  ```
+  - Length: 0x24 (36 bytes)
+  - Cell voltages: 16 × 2 bytes (example hex values)
+  - Temperatures: 3 × 2 bytes (example values)
+  - System string count: 0x02
+  - Checksum: XOR of Length through last data byte = 0xF5
+
+### MOS Control Example
+
+- **Allow Discharge Command:**
+  ```
+  EA D1 01 02 FF 19 FD F5
+  ```
+- **Response Frame (success):**
+  ```
+  EA D1 01 03 FF 19 00 FB F5
+  ```
+  - Status byte 0x00 indicates success
+  - Checksum calculated over Length through status byte
+
+---
+
+## Timing Requirements
+
+- The host must wait at least **100 ms** between scan commands to prevent bus collisions.
+- MOS control commands must be acknowledged within **200 ms**.
+- Multi-frame responses must be handled appropriately with timing to avoid data loss.
+
+---
+
+## Checksum Example
+
+Given the frame:
+
+```
+EA D1 01 02 FF 02 FD F5
+```
+
+Calculate checksum as XOR of bytes from Length through Command/Data:
+
+```
+Length = 0x02
+Command High = 0xFF
+Command Low = 0x02
+
+Checksum = 0x02 XOR 0xFF XOR 0x02 = 0xFD
+```
+
+This checksum (0xFD) is placed before the End byte (0xF5).
+
+---
+
+## Implementation Notes
+
+- Ensure correct calculation of checksum excluding Product ID and Address.
+- Support multi-frame CAN transmission with proper frame IDs.
+- Validate all received frames for correct start/end bytes and checksum.
+- Use 100 ms minimum interval between scan commands.
+- MOS control commands require timely acknowledgement.
+- Follow the specified command set strictly; do not use undocumented commands.
+
+---
+
+_Note: This document is a corrected translation aligned with the original Chinese specification for the Orion 1000 BMS Software Protection Board communication protocol._
