@@ -3,3 +3,4 @@
 - if a python version file does not already exist, use uv to create one and pin the project python version to 3.13.
 - use uv to manage project python dependencies
 - if not already activated, activate the project's virtual env by running `source .venv/bin/activate`
+- add an empty **init**.py to any newly-created sub-directories within the tests/ directory.
