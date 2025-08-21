@@ -98,6 +98,16 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "phase1: marks tests as part of phase 1",
+    "phase2: marks tests as part of phase 2",
+    "phase3: marks tests as part of phase 3",
+    "phase4: marks tests as part of phase 4",
+    "phase5: marks tests as part of phase 5",
+    "phase6: marks tests as part of phase 6",
+    "phase7: marks tests as part of phase 7",
+    "phase8: marks tests as part of phase 8",
+]
 
 [tool.coverage.run]
 source = ["src"]
