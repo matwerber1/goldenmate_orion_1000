@@ -6,3 +6,4 @@
 - add an empty **init**.py to any newly-created sub-directories within the tests/ directory.
 - add type annotations to all function and method return types. If a function or method does not return a value, use "-> None".
 - add type annotations to all parameters in function and method call signatures
+- after finishing changes to a file, run "ruff format" on that file.
