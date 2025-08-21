@@ -14,7 +14,7 @@ def xor_checksum(data: bytes) -> int:
     """Calculate XOR checksum of data bytes.
 
     Args:
-        data: Bytes to checksum (ProductId through Data)
+        data: Bytes to checksum (Length through Data, excluding Product ID and Address)
 
     Returns:
         XOR checksum as integer
@@ -45,8 +45,8 @@ def build_frame(
     # Build frame without checksum
     frame_data = bytes([START, product_id, address, data_len, cmd_hi, cmd_lo]) + payload
 
-    # Calculate checksum from product_id through payload
-    checksum_data = frame_data[1:]  # Skip start byte
+    # Calculate checksum from Length through payload (excluding Product ID and Address)
+    checksum_data = frame_data[3:]  # Skip start, product_id, address
     checksum = xor_checksum(checksum_data)
 
     # Add checksum and end

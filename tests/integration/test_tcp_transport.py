@@ -24,15 +24,15 @@ def test_tcp_transport_basic_request(fake_server: FakeBmsServer) -> None:
     """Test basic TCP transport request/response."""
     transport = TcpTransport("127.0.0.1", fake_server.port)
 
-    # Send read total voltage command
-    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
+    # Send voltage request command
+    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x02, b"")
     response_bytes = transport.send_request(request)
 
     # Decode response
     response = decode(response_bytes)
-    assert response.cmd_hi == 0x03
-    assert response.cmd_lo == 0x00
-    assert len(response.payload) == 2  # Voltage data
+    assert response.cmd_hi == 0xFF
+    assert response.cmd_lo == 0x02
+    assert len(response.payload) == 39  # Voltage data
 
     transport.close()
 
@@ -42,17 +42,17 @@ def test_tcp_transport_multiple_requests(fake_server: FakeBmsServer) -> None:
     """Test multiple requests on same connection."""
     transport = TcpTransport("127.0.0.1", fake_server.port)
 
-    # First request - total voltage
-    request1 = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
+    # First request - voltage
+    request1 = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x02, b"")
     response1 = transport.send_request(request1)
     frame1 = decode(response1)
-    assert frame1.cmd_hi == 0x03 and frame1.cmd_lo == 0x00
+    assert frame1.cmd_hi == 0xFF and frame1.cmd_lo == 0x02
 
-    # Second request - current
-    request2 = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x02, b"")
+    # Second request - current status
+    request2 = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x03, b"")
     response2 = transport.send_request(request2)
     frame2 = decode(response2)
-    assert frame2.cmd_hi == 0x03 and frame2.cmd_lo == 0x02
+    assert frame2.cmd_hi == 0xFF and frame2.cmd_lo == 0x03
 
     transport.close()
 
@@ -62,7 +62,7 @@ def test_tcp_transport_timeout() -> None:
     """Test transport timeout on non-existent server."""
     transport = TcpTransport("127.0.0.1", 9999, connect_timeout=0.1)
 
-    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
+    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x02, b"")
 
     with pytest.raises((TransportError, TimeoutError)):
         transport.send_request(request)
@@ -74,15 +74,15 @@ def test_tcp_transport_auto_reconnect(fake_server: FakeBmsServer) -> None:
     transport = TcpTransport("127.0.0.1", fake_server.port)
 
     # First request
-    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
+    request = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x02, b"")
     response1 = transport.send_request(request)
-    assert decode(response1).cmd_hi == 0x03
+    assert decode(response1).cmd_hi == 0xFF
 
     # Close connection
     transport.close()
 
     # Second request should auto-reconnect
     response2 = transport.send_request(request)
-    assert decode(response2).cmd_hi == 0x03
+    assert decode(response2).cmd_hi == 0xFF
 
     transport.close()

@@ -30,14 +30,14 @@ def client(fake_server: FakeBmsServer) -> Iterator[BmsClient]:
 def test_client_read_total_voltage(client: BmsClient) -> None:
     """Test client read total voltage integration."""
     voltage = client.read_total_voltage()
-    assert voltage == 485.0  # From fake server
+    assert voltage == 48.0  # 16 cells * 3.0V each
 
 
 @pytest.mark.phase6
 def test_client_read_current(client: BmsClient) -> None:
     """Test client read current integration."""
     current = client.read_current()
-    assert current == 105.0  # From fake server
+    assert current == 10.5  # From fake server
 
 
 @pytest.mark.phase6
@@ -47,13 +47,13 @@ def test_client_multiple_requests(client: BmsClient) -> None:
     current = client.read_current()
     voltage2 = client.read_total_voltage()
 
-    assert voltage1 == 485.0
-    assert current == 105.0
-    assert voltage2 == 485.0
+    assert voltage1 == 48.0
+    assert current == 10.5
+    assert voltage2 == 48.0
 
 
 @pytest.mark.phase6
 def test_client_with_timeout(client: BmsClient) -> None:
     """Test client requests with timeout."""
     voltage = client.read_total_voltage(timeout=1.0)
-    assert voltage == 485.0
+    assert voltage == 48.0

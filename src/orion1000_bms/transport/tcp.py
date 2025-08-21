@@ -110,24 +110,17 @@ class TcpTransport(BaseTransport):
 
         # Phase 1: Read until we find start byte
         while True:
-            byte = self._socket.recv(1)
-            if not byte:
-                raise TransportError("Connection closed")
+            byte = self._recv_exact(1)
             if byte[0] == START:
                 break
 
         # Phase 2: Read header to get frame length
-        header = self._socket.recv(3)  # product_id, address, data_len
-        if len(header) != 3:
-            raise TransportError("Incomplete header")
-
+        header = self._recv_exact(3)  # product_id, address, data_len
         data_len = header[2]
 
         # Phase 3: Read remaining data + checksum + end
         remaining = data_len + 2  # data + checksum + end
-        data = self._socket.recv(remaining)
-        if len(data) != remaining:
-            raise TransportError("Incomplete frame")
+        data = self._recv_exact(remaining)
 
         # Verify end byte
         if data[-1] != END:
@@ -135,3 +128,29 @@ class TcpTransport(BaseTransport):
 
         # Return complete frame
         return bytes([START]) + header + data
+
+    def _recv_exact(self, n: int) -> bytes:
+        """Receive exactly n bytes from socket.
+
+        Args:
+            n: Number of bytes to receive
+
+        Returns:
+            Exactly n bytes
+
+        Raises:
+            TransportError: If connection closed or timeout
+        """
+        if not self._socket:
+            raise TransportError("Socket not connected")
+
+        data = b""
+        while len(data) < n:
+            try:
+                chunk = self._socket.recv(n - len(data))
+                if not chunk:
+                    raise TransportError("Connection closed")
+                data += chunk
+            except socket.timeout:
+                raise TimeoutError("Read timeout")
+        return data

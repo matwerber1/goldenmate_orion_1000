@@ -41,8 +41,8 @@ class Frame:
             + self.payload
         )
 
-        # Calculate checksum from product_id through payload
-        checksum_data = frame_data[1:]  # Skip start byte
+        # Calculate checksum from Length through payload (excluding Product ID and Address)
+        checksum_data = frame_data[3:]  # Skip start, product_id, address
         calculated_checksum = xor_checksum(checksum_data)
 
         # Add checksum and end byte
@@ -81,7 +81,7 @@ class Frame:
             raise FrameError(f"Invalid end byte: {end:#x}")
 
         # Verify checksum
-        checksum_data = raw[1 : 4 + data_len]  # product_id through payload
+        checksum_data = raw[3 : 4 + data_len]  # Length through payload (excluding Product ID and Address)
         expected_checksum = xor_checksum(checksum_data)
         if checksum != expected_checksum:
             logger.warning(

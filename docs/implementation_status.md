@@ -150,3 +150,10 @@ This document tracks the completion status of each phase and step outlined in th
 - Updated test files to expect new exception types (FrameError, ChecksumError, TransportError) instead of ValueError and generic exceptions.
 - Added pytest markers (@pytest.mark.phase1, @pytest.mark.phase2, etc.) to all test functions to identify which implementation phase they cover.
 - Fixed test compatibility issues after implementing Phase 4 exception hierarchy.
+- Updated protocol implementation to align with corrected English translation of Chinese specification.
+- Fixed checksum calculation to exclude Product ID and Address bytes as per updated specification.
+- Updated command structure to use Command High (0xFF) + Command Low format instead of combined command IDs.
+- Implemented new command set: voltage request, current/status request, capacity/status request, serial number request, and MOS control commands.
+- Updated all response data structures to match detailed layouts in updated specification.
+- Removed old command implementations (read_total_voltage, read_current, read_cell_voltage) and replaced with specification-compliant commands.
+- Updated client API to provide both new methods and backward-compatible convenience methods.

@@ -2,18 +2,14 @@
 
 from typing import Dict, Tuple
 
-# Golden frames: (description, request_hex, response_hex)
+# Golden frames: (request_hex, response_hex) based on updated protocol spec
 GOLDEN_FRAMES: Dict[str, Tuple[str, str]] = {
-    "read_total_voltage": (
-        "EA D1 01 02 03 00 D1 F5",  # Request: read total voltage
-        "EA D1 01 04 03 00 01 E5 33 F5"  # Response: 48.5V (0x01E5)
+    "voltage_request": (
+        "EA D1 01 02 FF 02 FF F5",  # Request: voltage data (checksum: 0x02^0xFF^0x02=0xFF)
+        "EA D1 01 29 FF 02 0C 34 0C 35 0C 36 0C 37 0C 38 0C 39 0C 3A 0C 3B 0C 3C 0C 3D 0C 3E 0C 3F 0C 40 0C 41 0C 42 0C 43 00 FA 00 FB 00 FC 02 2B F5"
     ),
-    "read_current": (
-        "EA D1 01 02 03 02 D3 F5",  # Request: read current
-        "EA D1 01 04 03 02 00 69 BC F5"  # Response: 10.5A (0x0069)
-    ),
-    "read_cell_voltage_0": (
-        "EA D1 01 03 03 01 00 D1 F5",  # Request: read cell 0 voltage
-        "EA D1 01 05 03 01 00 0D 80 5A F5"  # Response: cell 0, 3.456V (0x0D80)
+    "current_status_request": (
+        "EA D1 01 02 FF 03 FE F5",  # Request: current and status (checksum: 0x02^0xFF^0x03=0xFE)
+        "EA D1 01 0F FF 03 01 00 69 00 00 FA 00 FB 00 FC 03 01 00 64 F5"
     ),
 }

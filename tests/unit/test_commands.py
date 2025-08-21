@@ -2,97 +2,163 @@
 
 import pytest
 import struct
-from orion1000_bms.commands.read_total_voltage import ReadTotalVoltageRequest, ReadTotalVoltageResponse
-from orion1000_bms.commands.read_current import ReadCurrentRequest, ReadCurrentResponse
-from orion1000_bms.commands.read_cell_voltage import ReadCellVoltageRequest, ReadCellVoltageResponse
-from orion1000_bms.commands.registry import CommandId, COMMANDS
+from orion1000_bms.commands import (
+    VoltageRequest,
+    VoltageResponse,
+    CurrentStatusRequest,
+    CurrentStatusResponse,
+    CapacityStatusRequest,
+    CapacityStatusResponse,
+    SerialNumberRequest,
+    SerialNumberResponse,
+    AllowDischargeRequest,
+    MosControlResponse,
+    CommandId,
+    COMMANDS,
+)
 
 
 @pytest.mark.phase5
-def test_read_total_voltage_request() -> None:
-    """Test read total voltage request."""
-    req = ReadTotalVoltageRequest()
-    assert req.command_id == CommandId.READ_TOTAL_VOLTAGE
+def test_voltage_request() -> None:
+    """Test voltage request."""
+    req = VoltageRequest()
+    assert req.command_id == CommandId.VOLTAGE_REQUEST
     assert req.address == 0x01
     assert req.to_payload() == b""
 
 
 @pytest.mark.phase5
-def test_read_total_voltage_response() -> None:
-    """Test read total voltage response parsing."""
-    # Test voltage 48.5V = 485 (0x01E5)
-    payload = struct.pack(">H", 485)
-    resp = ReadTotalVoltageResponse.from_payload(payload)
-    assert resp.voltage == 48.5
+def test_voltage_response() -> None:
+    """Test voltage response parsing."""
+    # Create test payload: cmd_hi + cmd_lo + 16 cell voltages + 3 temperatures + string count
+    payload = bytearray([0xFF, 0x02])  # Command bytes
+    
+    # Add 16 cell voltages (3000-3015 mV)
+    for i in range(16):
+        voltage_mv = 3000 + i
+        payload.extend(struct.pack(">H", voltage_mv))
+    
+    # Add 3 temperatures (25.0, 26.5, 24.8 °C)
+    payload.extend(struct.pack(">h", 250))  # 25.0°C
+    payload.extend(struct.pack(">h", 265))  # 26.5°C
+    payload.extend(struct.pack(">h", 248))  # 24.8°C
+    
+    # Add string count
+    payload.append(2)
+    
+    resp = VoltageResponse.from_payload(bytes(payload))
+    assert len(resp.cell_voltages) == 16
+    assert resp.cell_voltages[0] == 3.000
+    assert resp.cell_voltages[15] == 3.015
+    assert len(resp.temperatures) == 3
+    assert resp.temperatures[0] == 25.0
+    assert resp.temperatures[1] == 26.5
+    assert resp.temperatures[2] == 24.8
+    assert resp.system_string_count == 2
 
 
 @pytest.mark.phase5
-def test_read_total_voltage_response_invalid_length() -> None:
-    """Test read total voltage response with invalid payload length."""
+def test_voltage_response_invalid_length() -> None:
+    """Test voltage response with invalid payload length."""
     with pytest.raises(ValueError, match="Invalid payload length"):
-        ReadTotalVoltageResponse.from_payload(b"\x01")
+        VoltageResponse.from_payload(b"\x01")
 
 
 @pytest.mark.phase5
-def test_read_current_request() -> None:
-    """Test read current request."""
-    req = ReadCurrentRequest()
-    assert req.command_id == CommandId.READ_CURRENT
+def test_current_status_request() -> None:
+    """Test current status request."""
+    req = CurrentStatusRequest()
+    assert req.command_id == CommandId.CURRENT_STATUS_REQUEST
     assert req.address == 0x01
     assert req.to_payload() == b""
 
 
 @pytest.mark.phase5
-def test_read_current_response() -> None:
-    """Test read current response parsing."""
-    # Test current 10.5A = 105 (0x0069)
-    payload = struct.pack(">H", 105)
-    resp = ReadCurrentResponse.from_payload(payload)
+def test_current_status_response() -> None:
+    """Test current status response parsing."""
+    # Create test payload: cmd_hi + cmd_lo + status + current + protection + 3 temps + mos + version + faults
+    payload = bytearray([0xFF, 0x03])  # Command bytes
+    payload.append(0x01)  # Status bits
+    payload.extend(struct.pack(">h", 105))  # Current 10.5A
+    payload.append(0x00)  # Protection status
+    payload.extend(struct.pack(">h", 250))  # Temp 1: 25.0°C
+    payload.extend(struct.pack(">h", 265))  # Temp 2: 26.5°C
+    payload.extend(struct.pack(">h", 248))  # Temp 3: 24.8°C
+    payload.append(0x03)  # MOS states
+    payload.append(0x01)  # Version
+    payload.append(0x00)  # Fault flags
+    
+    resp = CurrentStatusResponse.from_payload(bytes(payload))
+    assert resp.status_bits == 0x01
     assert resp.current == 10.5
+    assert resp.protection_status == 0x00
+    assert len(resp.temperatures) == 3
+    assert resp.temperatures[0] == 25.0
+    assert resp.mos_states == 0x03
+    assert resp.version == 0x01
+    assert resp.fault_flags == 0x00
 
 
 @pytest.mark.phase5
-def test_read_current_response_invalid_length() -> None:
-    """Test read current response with invalid payload length."""
+def test_current_status_response_invalid_length() -> None:
+    """Test current status response with invalid payload length."""
     with pytest.raises(ValueError, match="Invalid payload length"):
-        ReadCurrentResponse.from_payload(b"\x01\x02\x03")
+        CurrentStatusResponse.from_payload(b"\x01\x02\x03")
 
 
 @pytest.mark.phase5
-def test_read_cell_voltage_request() -> None:
-    """Test read cell voltage request."""
-    req = ReadCellVoltageRequest(cell_index=5)
-    assert req.command_id == CommandId.READ_CELL_VOLTAGE
+def test_serial_number_request() -> None:
+    """Test serial number request."""
+    req = SerialNumberRequest()
+    assert req.command_id == CommandId.SERIAL_NUMBER_REQUEST
     assert req.address == 0x01
-    assert req.cell_index == 5
-    assert req.to_payload() == b"\x05"
+    assert req.to_payload() == b""
 
 
 @pytest.mark.phase5
-def test_read_cell_voltage_response() -> None:
-    """Test read cell voltage response parsing."""
-    # Test cell 3, voltage 3.456V = 3456 (0x0D80)
-    payload = b"\x03" + struct.pack(">H", 3456)
-    resp = ReadCellVoltageResponse.from_payload(payload)
-    assert resp.cell_index == 3
-    assert resp.voltage == 3.456
+def test_serial_number_response() -> None:
+    """Test serial number response parsing."""
+    # Create test payload: cmd_hi + cmd_lo + length + ASCII data
+    test_serial = "BMS123456"
+    payload = bytearray([0xFF, 0x11])  # Command bytes
+    payload.append(len(test_serial))  # Length
+    payload.extend(test_serial.encode('ascii'))  # ASCII data
+    
+    resp = SerialNumberResponse.from_payload(bytes(payload))
+    assert resp.serial_number == test_serial
 
 
 @pytest.mark.phase5
-def test_read_cell_voltage_response_invalid_length() -> None:
-    """Test read cell voltage response with invalid payload length."""
-    with pytest.raises(ValueError, match="Invalid payload length"):
-        ReadCellVoltageResponse.from_payload(b"\x01\x02")
+def test_mos_control_request() -> None:
+    """Test MOS control request."""
+    req = AllowDischargeRequest()
+    assert req.command_id == CommandId.ALLOW_DISCHARGE
+    assert req.address == 0x01
+    assert req.to_payload() == b""
+
+
+@pytest.mark.phase5
+def test_mos_control_response() -> None:
+    """Test MOS control response parsing."""
+    # Create test payload: cmd_hi + cmd_lo + status
+    payload = bytes([0xFF, 0x19, 0x00])  # Command echo + success status
+    
+    resp = MosControlResponse.from_payload(payload)
+    assert resp.command_id == 0x19
+    assert resp.status == 0x00
+    assert resp.success is True
 
 
 @pytest.mark.phase5
 def test_command_registry() -> None:
     """Test command registry contains all commands."""
-    assert CommandId.READ_TOTAL_VOLTAGE in COMMANDS
-    assert CommandId.READ_CURRENT in COMMANDS
-    assert CommandId.READ_CELL_VOLTAGE in COMMANDS
+    assert CommandId.VOLTAGE_REQUEST in COMMANDS
+    assert CommandId.CURRENT_STATUS_REQUEST in COMMANDS
+    assert CommandId.CAPACITY_STATUS_REQUEST in COMMANDS
+    assert CommandId.SERIAL_NUMBER_REQUEST in COMMANDS
+    assert CommandId.ALLOW_DISCHARGE in COMMANDS
     
     # Test command specs
-    total_voltage_spec = COMMANDS[CommandId.READ_TOTAL_VOLTAGE]
-    assert total_voltage_spec.req == ReadTotalVoltageRequest
-    assert total_voltage_spec.resp == ReadTotalVoltageResponse
+    voltage_spec = COMMANDS[CommandId.VOLTAGE_REQUEST]
+    assert voltage_spec.req == VoltageRequest
+    assert voltage_spec.resp == VoltageResponse

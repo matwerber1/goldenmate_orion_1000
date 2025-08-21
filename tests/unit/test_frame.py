@@ -18,7 +18,7 @@ def test_frame_round_trip() -> None:
         cmd_hi=0x03,
         cmd_lo=0x00,
         payload=b"",
-        checksum=0xD1,
+        checksum=0x01,
         end=END
     )
     
@@ -35,14 +35,14 @@ def test_frame_round_trip() -> None:
 def test_build_frame() -> None:
     """Test build_frame function."""
     raw = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"")
-    expected = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5"
+    expected = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
     assert raw == expected
 
 
 @pytest.mark.phase2
 def test_decode_function() -> None:
     """Test decode function."""
-    raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5"
+    raw = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
     frame = decode(raw)
     
     assert frame.start == START
@@ -52,7 +52,7 @@ def test_decode_function() -> None:
     assert frame.cmd_hi == 0x03
     assert frame.cmd_lo == 0x00
     assert frame.payload == b""
-    assert frame.checksum == 0xD1
+    assert frame.checksum == 0x01
     assert frame.end == END
 
 
@@ -111,7 +111,7 @@ def test_invalid_frame_length() -> None:
 def test_frame_minimum_length() -> None:
     """Test frame at minimum valid length."""
     # Minimum frame: start + product_id + address + data_len(2) + cmd_hi + cmd_lo + checksum + end = 8 bytes
-    raw = b"\xEA\xD1\x01\x02\x03\x00\xD1\xF5"
+    raw = b"\xEA\xD1\x01\x02\x03\x00\x01\xF5"
     frame = Frame.from_bytes(raw)
     assert frame.data_len == 2
     assert frame.payload == b""

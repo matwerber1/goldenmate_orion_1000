@@ -7,16 +7,25 @@ from typing import TYPE_CHECKING, cast
 
 from .commands.base import BaseCommand, BaseResponse
 from .commands.registry import COMMANDS, CommandId
-from .commands.read_cell_voltage import ReadCellVoltageRequest, ReadCellVoltageResponse
-from .commands.read_current import ReadCurrentRequest, ReadCurrentResponse
-from .commands.read_total_voltage import (
-    ReadTotalVoltageRequest,
-    ReadTotalVoltageResponse,
+from .commands import (
+    VoltageRequest,
+    VoltageResponse,
+    CurrentStatusRequest,
+    CurrentStatusResponse,
+    CapacityStatusRequest,
+    CapacityStatusResponse,
+    SerialNumberRequest,
+    SerialNumberResponse,
+    AllowDischargeRequest,
+    DisallowDischargeRequest,
+    AllowChargeRequest,
+    DisallowChargeRequest,
+    MosControlResponse,
 )
 from .exceptions import UnsupportedCommandError
 from .logging import get_logger
 from .protocol.codec import build_frame
-from .protocol.constants import PRODUCT_ID_DEFAULT
+from .protocol.constants import PRODUCT_ID_DEFAULT, COMMAND_HIGH
 
 if TYPE_CHECKING:
     from .transport.base import AbstractTransport
@@ -91,8 +100,8 @@ class BmsClient:
             spec = COMMANDS[cmd_id]
 
             # Build request frame
-            cmd_hi = (req.command_id >> 8) & 0xFF
-            cmd_lo = req.command_id & 0xFF
+            cmd_hi = COMMAND_HIGH  # Always 0xFF
+            cmd_lo = req.command_id  # Command ID is now the low byte
             payload = req.to_payload()
 
             request_frame = build_frame(
@@ -120,15 +129,16 @@ class BmsClient:
                 )
                 raise UnsupportedCommandError("Response command mismatch")
 
-            # Parse response payload
+            # Parse response payload (include command bytes in payload)
             try:
-                response = spec.resp.from_payload(response_frame.payload)
+                full_payload = bytes([response_frame.cmd_hi, response_frame.cmd_lo]) + response_frame.payload
+                response = spec.resp.from_payload(full_payload)
                 self._logger.debug(
-                    "Successfully processed command 0x%04x", req.command_id
+                    "Successfully processed command 0x%02x", req.command_id
                 )
             except Exception as e:
                 self._logger.exception(
-                    "Failed to parse response payload for command 0x%04x",
+                    "Failed to parse response payload for command 0x%02x",
                     req.command_id,
                 )
                 raise
@@ -136,8 +146,113 @@ class BmsClient:
             self._last_request_time = time.time()
             return response
 
+    def read_voltage_data(self, *, timeout: float | None = None) -> VoltageResponse:
+        """Read all cell voltages and temperatures.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            VoltageResponse with all cell voltages and temperatures
+        """
+        req = VoltageRequest()
+        resp = cast(VoltageResponse, self.request(req, timeout=timeout))
+        return resp
+
+    def read_current_status(self, *, timeout: float | None = None) -> CurrentStatusResponse:
+        """Read current and status information.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            CurrentStatusResponse with current and status data
+        """
+        req = CurrentStatusRequest()
+        resp = cast(CurrentStatusResponse, self.request(req, timeout=timeout))
+        return resp
+
+    def read_capacity_status(self, *, timeout: float | None = None) -> CapacityStatusResponse:
+        """Read capacity and status information.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            CapacityStatusResponse with capacity data
+        """
+        req = CapacityStatusRequest()
+        resp = cast(CapacityStatusResponse, self.request(req, timeout=timeout))
+        return resp
+
+    def read_serial_number(self, *, timeout: float | None = None) -> str:
+        """Read device serial number.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            Device serial number as string
+        """
+        req = SerialNumberRequest()
+        resp = cast(SerialNumberResponse, self.request(req, timeout=timeout))
+        return resp.serial_number
+
+    def allow_discharge(self, *, timeout: float | None = None) -> bool:
+        """Allow discharge (open discharge MOS).
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            True if successful, False otherwise
+        """
+        req = AllowDischargeRequest()
+        resp = cast(MosControlResponse, self.request(req, timeout=timeout))
+        return resp.success
+
+    def disallow_discharge(self, *, timeout: float | None = None) -> bool:
+        """Disallow discharge (close discharge MOS).
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            True if successful, False otherwise
+        """
+        req = DisallowDischargeRequest()
+        resp = cast(MosControlResponse, self.request(req, timeout=timeout))
+        return resp.success
+
+    def allow_charge(self, *, timeout: float | None = None) -> bool:
+        """Allow charge.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            True if successful, False otherwise
+        """
+        req = AllowChargeRequest()
+        resp = cast(MosControlResponse, self.request(req, timeout=timeout))
+        return resp.success
+
+    def disallow_charge(self, *, timeout: float | None = None) -> bool:
+        """Disallow charge.
+
+        Args:
+            timeout: Optional timeout override
+
+        Returns:
+            True if successful, False otherwise
+        """
+        req = DisallowChargeRequest()
+        resp = cast(MosControlResponse, self.request(req, timeout=timeout))
+        return resp.success
+
+    # Convenience methods for backward compatibility
     def read_total_voltage(self, *, timeout: float | None = None) -> float:
-        """Read total pack voltage.
+        """Read total pack voltage (sum of all cells).
 
         Args:
             timeout: Optional timeout override
@@ -145,9 +260,8 @@ class BmsClient:
         Returns:
             Total voltage in volts
         """
-        req = ReadTotalVoltageRequest()
-        resp = cast(ReadTotalVoltageResponse, self.request(req, timeout=timeout))
-        return resp.voltage
+        voltage_data = self.read_voltage_data(timeout=timeout)
+        return sum(voltage_data.cell_voltages)
 
     def read_current(self, *, timeout: float | None = None) -> float:
         """Read pack current.
@@ -158,13 +272,10 @@ class BmsClient:
         Returns:
             Current in amperes
         """
-        req = ReadCurrentRequest()
-        resp = cast(ReadCurrentResponse, self.request(req, timeout=timeout))
-        return resp.current
+        current_status = self.read_current_status(timeout=timeout)
+        return current_status.current
 
-    def read_cell_voltage(
-        self, cell_index: int, *, timeout: float | None = None
-    ) -> float:
+    def read_cell_voltage(self, cell_index: int, *, timeout: float | None = None) -> float:
         """Read individual cell voltage.
 
         Args:
@@ -174,9 +285,10 @@ class BmsClient:
         Returns:
             Cell voltage in volts
         """
-        req = ReadCellVoltageRequest(cell_index=cell_index)
-        resp = cast(ReadCellVoltageResponse, self.request(req, timeout=timeout))
-        return resp.voltage
+        voltage_data = self.read_voltage_data(timeout=timeout)
+        if cell_index < 0 or cell_index >= len(voltage_data.cell_voltages):
+            raise ValueError(f"Invalid cell index: {cell_index}")
+        return voltage_data.cell_voltages[cell_index]
 
     def close(self) -> None:
         """Close the transport connection."""
