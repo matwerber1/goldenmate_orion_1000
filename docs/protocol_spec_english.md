@@ -34,6 +34,17 @@ All communication frames follow the manufacturer’s standard structure:
 - **Checksum**: Single-byte XOR of all bytes from Product ID through Data
 - **End Byte**: Frame end identifier (0xF5)
 
+## Data Encoding
+
+| Data Type    | Unit              | Encoding Notes                                                               |
+| ------------ | ----------------- | ---------------------------------------------------------------------------- |
+| Voltage      | Volts (V)         | Encoded in deci-volts (0.1 V units) or milli-volts (mV) depending on command |
+| Current      | Amperes (A)       | Encoded in deci-amperes (0.1 A units)                                        |
+| Temperature  | Degrees Celsius   | Encoded as signed byte or word, unit depends on command                      |
+| Capacity     | Ampere-hours (Ah) | Encoded in deci-ampere-hours (0.1 Ah units)                                  |
+| Cycle Count  | Count             | Integer value                                                                |
+| Status Codes | N/A               | Bitfields or enumerations as per specification                               |
+
 ## Command Set
 
 ### Battery Status Commands
@@ -47,6 +58,10 @@ All communication frames follow the manufacturer’s standard structure:
 | Read State of Health (SOH)    | 0x03 | 0x04 | Query state of health             |
 | Read MOSFET Temperature       | 0x03 | 0x05 | Query MOSFET temperature          |
 | Read Ambient Temperature      | 0x03 | 0x06 | Query ambient temperature         |
+| Read Total Capacity           | 0x03 | 0x07 | Query total battery capacity      |
+| Read Remaining Capacity       | 0x03 | 0x08 | Query remaining battery capacity  |
+| Read Cycle Count              | 0x03 | 0x09 | Query battery cycle count         |
+| Read Manufacturing Info       | 0x03 | 0x0A | Query manufacturing information   |
 
 #### Example Frame
 
@@ -100,6 +115,32 @@ All communication frames follow the manufacturer’s standard structure:
   - `[2F]` Checksum (D1 XOR 01 XOR 04 XOR 03 XOR 01 XOR 0D XOR 79 = 2F)
   - `[F5]` End Byte
 
+### Multi-frame Response Example (Read All Cell Voltages)
+
+- **Response Frame 1:**
+  `EA D1 01 0C 03 01 0D 79 0D 7A 0D 7B 0D 7C 0D 7D 0D 7E 0D 7F 9A F5`
+
+  - `[0C]` Data Length (12 bytes: command + 10 bytes data)
+  - `[0D 79]` Cell 1 voltage
+  - `[0D 7A]` Cell 2 voltage
+  - `[0D 7B]` Cell 3 voltage
+  - `[0D 7C]` Cell 4 voltage
+  - `[0D 7D]` Cell 5 voltage
+  - `[0D 7E]` Cell 6 voltage
+  - `[0D 7F]` Cell 7 voltage
+  - `[9A]` Checksum
+  - `[F5]` End Byte
+
+- **Response Frame 2:**
+  `EA D1 01 08 03 01 0D 80 0D 81 0D 82 0D 83 5B F5`
+  - `[08]` Data Length (8 bytes: command + 6 bytes data)
+  - `[0D 80]` Cell 8 voltage
+  - `[0D 81]` Cell 9 voltage
+  - `[0D 82]` Cell 10 voltage
+  - `[0D 83]` Cell 11 voltage
+  - `[5B]` Checksum
+  - `[F5]` End Byte
+
 ### Configuration Commands
 
 | Command         | High | Low  | Description                                                                                 |
@@ -135,6 +176,17 @@ _Note: Command codes are from the original Chinese specification._
   - `[00 64 00 32]` Data (example: 0x0064 = 100, 0x0032 = 50; parameter encoding per spec)
   - `[87]` Checksum (D1 XOR 01 XOR 06 XOR 04 XOR 01 XOR 00 XOR 64 XOR 00 XOR 32 = 87)
   - `[F5]` End Byte
+
+#### Parameter Ranges
+
+| Parameter          | Min | Max | Unit      | Description                     |
+| ------------------ | --- | --- | --------- | ------------------------------- |
+| Overvoltage Limit  | 3.6 | 4.3 | Volts     | Maximum allowed cell voltage    |
+| Undervoltage Limit | 2.5 | 3.0 | Volts     | Minimum allowed cell voltage    |
+| Charge Current     | 0   | 100 | Amperes   | Max charge current              |
+| Discharge Current  | 0   | 100 | Amperes   | Max discharge current           |
+| Temperature Limit  | -20 | 60  | Degrees C | Max allowed temperature         |
+| SOC Alarm Level    | 0   | 100 | Percent   | State of charge alarm threshold |
 
 ### Protection Commands
 
@@ -173,6 +225,22 @@ _Note: Command codes are from the original Chinese specification._
   - `[01]` Data (status code)
   - `[D3]` Checksum (D1 XOR 01 XOR 03 XOR 05 XOR 00 XOR 01 = D3)
   - `[F5]` End Byte
+
+#### Protection / Warning / Fault Bit Definitions
+
+| Bit | Description                       |
+| --- | --------------------------------- |
+| 0   | Overvoltage protection active     |
+| 1   | Undervoltage protection active    |
+| 2   | Overcurrent protection active     |
+| 3   | Short circuit protection active   |
+| 4   | Overtemperature protection active |
+| 5   | Communication fault               |
+| 6   | Hardware fault                    |
+| 7   | Reserved                          |
+
+- Each bit corresponds to a specific protection or warning condition.
+- Multiple bits may be set simultaneously to indicate combined states.
 
 ## Response Codes
 
@@ -230,6 +298,18 @@ Error responses follow the same frame structure as normal responses, but the **D
   - `[84]` Data (error code = system busy).
 
 _Note: In all error responses, the command bytes are echoed, and the error code is returned in the data field. The checksum is always valid, calculated over the full frame._
+
+#### Checksum Example
+
+The checksum byte is calculated as the XOR of all bytes from the Product ID through the Data bytes. For example, in the frame:
+
+`EA D1 01 02 03 00 D2 F5`
+
+The checksum `D2` is computed as:
+
+`D1 XOR 01 XOR 02 XOR 03 XOR 00 = D2`
+
+This ensures data integrity and allows detection of transmission errors.
 
 ## Implementation Notes
 
