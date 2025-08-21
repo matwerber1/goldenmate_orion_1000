@@ -1,248 +1,193 @@
-# Orion 1000 Battery Management System (BMS) Software Protection Board Communication Protocol
+# GoldenMate Orion 1000 Battery Management System (BMS) Serial Communication Protocol
 
-## Overview
-
-This document specifies the communication protocol for the Software Protection Board of the Orion 1000 Battery Management System (BMS). It defines the serial and CAN communication formats, commands, responses, and timing requirements to interact with the Orion 1000 BMS.
-
-## Communication Parameters
-
-- **RS485/RS232/UART**: 9600 baud, 8 data bits, no parity, 1 stop bit (8N1)
-- **CAN 2.0**: 11-bit Identifier, 250 kbps (may vary depending on project)
-- The host must wait at least **100 ms** between scan commands to avoid bus conflicts.
-
-## Protocol Structure
-
-### Frame Format
-
-All frames follow this structure:
-
-```
-[Start] [Product ID] [Address] [Length] [Command High=0xFF] [Command Low] [Data...] [Checksum] [End]
-```
-
-- **Start**: Frame start byte (0xEA)
-- **Product ID**: Identifies the Orion 1000 device (1 byte, 0xD1)
-- **Address**: Device address (1 byte), supports multiple devices on the same bus
-- **Length**: Number of bytes remaining in the frame after this length byte, up through and including the final end byte.
-- **Command High**: Always 0xFF (1 byte)
-- **Command Low**: Command code (1 byte)
-- **Data**: Command-specific data (variable number of bytes)
-- **Checksum**: XOR of all bytes from **Length** through the last data byte
-- **End**: Frame end byte (0xF5)
-
-### Checksum Calculation
-
-The checksum is computed as the XOR of all bytes starting from the **Length** byte up to the last byte of the data payload, including the command bytes (Command High and Command Low). Product ID and Address are **not** included in the checksum calculation.
+This document is an English translation and clarification of the original Chinese specification. It focuses exclusively on the RS485/RS232/UART serial communication aspects. CAN bus details are omitted here (but were included in the original Chinese specification).
 
 ---
 
-## Command Set
+## Serial Communication Parameters
 
-| Command High | Command Low | Description                    |
-| ------------ | ----------- | ------------------------------ |
-| 0xFF         | 0x02        | Voltage Request                |
-| 0xFF         | 0x03        | Current and Status Request     |
-| 0xFF         | 0x04        | Capacity and Status Request    |
-| 0xFF         | 0x11        | Serial Number Request          |
-| 0xFF         | 0x19        | Allow Discharge (Open MOS)     |
-| 0xFF         | 0x1A        | Disallow Discharge (Close MOS) |
-| 0xFF         | 0x1B        | Allow Charge                   |
-| 0xFF         | 0x1C        | Disallow Charge                |
+- **Interface**: RS485 / RS232 / UART
+- **Baud Rate**: 9600 bps
+- **Data Bits**: 8
+- **Parity**: None
+- **Stop Bits**: 1
+- **Protocol Type**: Master–Slave (host sends request, BMS replies)
+- **Timing**: Host must wait at least 100 ms between consecutive scan command requests
 
 ---
 
-## Response Packet Definitions
+## Frame Structure Overview
 
-### Voltage Data Packet (Response to 0xFF 0x02)
+All communication is based on fixed-length request frames (8 bytes) and variable-length response frames (depending on the command and battery configuration).
 
-- **Data Fields:**
-  - Cell Voltages: 16 cells, each 2 bytes (uint16_t), unit: millivolts (mV)
-  - Temperature Probes: 3 probes, each 2 bytes (int16_t), unit: 0.1°C
-  - System String Count: 1 byte (number of battery strings)
-- **Length**: 41 bytes (Command High + Command Low + 37 bytes data + checksum + end byte)
+### Request Frame Format (8 Bytes)
 
-- **Example Data Layout:**
+| Byte | Name                  | Value / Meaning                                                         |
+| ---- | --------------------- | ----------------------------------------------------------------------- |
+| 1    | **Start Byte**        | `0xEA` (fixed)                                                          |
+| 2    | **Product ID**        | `0xD1` (fixed)                                                          |
+| 3    | **Battery Address**   | Default `0x01`; set by DIP switch if available                          |
+| 4    | **Data Length**       | Always `0x04` (length from this byte to end byte, not including itself) |
+| 5    | **Command High Byte** | Always `0xFF`                                                           |
+| 6    | **Command Low Byte**  | Varies depending on request type (see below)                            |
+| 7    | **Checksum**          | XOR of bytes 4–6 (Length + Command High + Command Low)                  |
+| 8    | **End Byte**          | `0xF5` (fixed)                                                          |
 
-| Offset | Field               | Size (bytes) | Description                 |
-| ------ | ------------------- | ------------ | --------------------------- |
-| 0      | Command High (0xFF) | 1            | Command High byte           |
-| 1      | Command Low (0x02)  | 1            | Command Low byte            |
-| 2-33   | Cell Voltages       | 32 (16×2)    | Voltages of 16 cells in mV  |
-| 34-39  | Temperature Probes  | 6 (3×2)      | Temperatures in 0.1°C units |
-| 40     | System String Count | 1            | Number of battery strings   |
+### Notes on Checksum (Byte 7)
 
-### Current and Status Data Packet (Response to 0xFF 0x03)
+- The checksum is a **1-byte XOR** of bytes 4, 5, and 6.
+- Example: For Length=`0x04`, Command High=`0xFF`, Command Low=`0x02`,
 
-- **Data Fields:**
-
-  - Status Bits: 1 byte (bitfield indicating battery and MOSFET status)
-  - Current: 2 bytes (int16_t), unit: 0.1 A (positive for discharge, negative for charge)
-  - Protection Status: 1 byte (bitfield of protection states)
-  - Temperatures: 3 probes, each 2 bytes (int16_t), unit: 0.1°C
-  - MOS States: 1 byte (bitfield indicating MOSFET on/off states)
-  - Version: 1 byte (hardware or firmware version)
-  - Fault Flags: 1 byte (bitfield of current fault conditions)
-
-- **Length**: 15 bytes (Command High + Command Low + 11 bytes data + checksum + end byte)
-
-### Capacity and Status Data Packet (Response to 0xFF 0x04)
-
-- **Data Fields:**
-
-  - SOC (State of Charge): 1 byte (%)
-  - Design Capacity: 2 bytes (uint16_t), unit: Ah × 10 (decahours)
-  - Full Capacity: 2 bytes (uint16_t), unit: Ah × 10
-  - Remaining Capacity: 2 bytes (uint16_t), unit: Ah × 10
-  - Cycle Count: 2 bytes (uint16_t)
-  - Charge Time: 2 bytes (uint16_t), minutes
-  - Discharge Time: 2 bytes (uint16_t), minutes
-  - Max Voltage: 2 bytes (uint16_t), mV
-  - Min Voltage: 2 bytes (uint16_t), mV
-  - Hardware Version: 1 byte
-  - Scheme ID: 1 byte (configuration scheme identifier)
-  - Reserved: 2 bytes (reserved for future use)
-
-- **Length**: 25 bytes (Command High + Command Low + 21 bytes data + checksum + end byte)
-
-### Serial Number Packet (Response to 0xFF 0x11)
-
-- **Data Fields:**
-
-  - Length: 1 byte (length of ASCII string)
-  - Serial Number: Variable length ASCII string (length as specified)
-
-- **Length**: Variable (Command High + Command Low + Length field + ASCII data + checksum + end byte)
-
-### MOS Control Response (Response to Commands 0xFF 0x19, 0x1A, 0x1B, 0x1C)
-
-- The MOS control commands (allow/disallow charge/discharge) must respond within **200 ms**.
-- Response frame echoes the command with a status byte:
-  - 0x00 = Success
-  - Other values indicate failure (specific codes not defined in spec)
+  - Calculation: `0x04 XOR 0xFF XOR 0x02 = 0xF9`
 
 ---
 
-## CAN Bus Protocol
+## Request Types (Command Low Byte)
 
-- **CAN IDs:**
+The following subsections describe supported request types. Each request is defined by the **Command Low Byte** (Byte 6 of the request frame).
 
-  - 0x0001: Start frame (indicates beginning of a multi-frame packet)
-  - 0x0002: Data frame(s) (up to 32 frames)
-  - 0x0003: End frame (indicates end of multi-frame packet)
+### 0x02 — Voltage Data Request
 
-- **Multi-frame Rules:**
+- Purpose: Request individual cell voltages and related metadata.
+- Example Request: `EA D1 01 04 FF 02 F9 F5`
 
-  - Maximum 8 bytes per CAN frame
-  - Up to 32 frames per packet (max 256 bytes total)
-  - Data is split sequentially across frames 0x0002
+### 0x03 — Current and Status Data Request
 
-- **Example: Voltage Request and Response**
+- Purpose: Request current measurement, status flags, and protection indicators.
+- Example Request: `EA D1 01 04 FF 03 F8 F5`
 
-  - Host sends single CAN frame with ID 0x0001 containing the voltage request command:
+### 0x04 — Capacity and State of Charge (SOC) Data Request
 
-    ```
-    ID: 0x0001
-    Data: EA D1 01 02 FF 02 XX F5
-    ```
+- Purpose: Request capacity metrics such as design capacity, full charge capacity, remaining capacity, SOC%, and related values.
+- Example Request: `EA D1 01 04 FF 04 FF F5`
 
-    (XX = checksum calculated over Length through Command/Data)
+### 0x11 — Battery Serial Number Request
 
-  - Device responds with multiple CAN frames:
-    - ID 0x0002 frames containing voltage data split into 8-byte chunks
-    - Final frame with ID 0x0003 indicating end of transmission
+- Purpose: Request ASCII identifier of the battery pack.
+- Example Request: `EA D1 01 04 FF 11 EA F5`
 
----
+### 0x19 — Enable Discharge Command
 
-## Examples
+- Purpose: Allow discharge by enabling discharge MOSFET.
+- Example Request: `EA D1 01 04 FF 19 E2 F5`
 
-### Voltage Request Example
+### 0x1A — Disable Discharge Command
 
-- **Request Frame (UART/RS485):**
+- Purpose: Disable discharge by turning off discharge MOSFET.
+- Example Request: `EA D1 01 04 FF 1A E1 F5`
 
-  ```
-  EA D1 01 02 FF 02 F5
-  ```
+### 0x1B — Enable Charge Command
 
-  - Start: EA
-  - Product ID: D1
-  - Address: 01
-  - Length: 04 (Command High + Command Low + checksum + end byte)
-  - Command: FF 02 (Voltage Request)
-  - Checksum: XOR of Length, Command High, Command Low = 02 XOR FF XOR 02 = FD
-  - End: F5
+- Purpose: Allow charging by enabling charge MOSFET.
+- Example Request: `EA D1 01 04 FF 1B E0 F5`
 
-  Correct full frame with checksum:
+### 0x1C — Disable Charge Command
 
-  ```
-  EA D1 01 04 FF 02 FD F5
-  ```
-
-- **Response Frame (example with 16 cell voltages and temperatures):**
-  ```
-  EA D1 01 29 FF 02 0C 34 0C 35 0C 36 0C 37 0C 38 0C 39 0C 3A 0C 3B 0C 3C 0C 3D 0C 3E 0C 3F 00 64 00 65 00 66 02 XX F5
-  ```
-  - Length: 0x29 (41 bytes: cmd_hi + cmd_lo + 37 data bytes + checksum + end)
-  - Cell voltages: 16 × 2 bytes (example hex values)
-  - Temperatures: 3 × 2 bytes (example values)
-  - System string count: 0x02
-  - Checksum: XOR of Length through last data byte
-  - End: 0xF5
-
-### MOS Control Example
-
-- **Allow Discharge Command:**
-  ```
-  EA D1 01 04 FF 19 XX F5
-  ```
-- **Response Frame (success):**
-  ```
-  EA D1 01 05 FF 19 00 XX F5
-  ```
-  - Length: 05 (cmd_hi + cmd_lo + status byte + checksum + end)
-  - Status byte 0x00 indicates success
-  - Checksum calculated over Length through status byte
+- Purpose: Disable charging by turning off charge MOSFET.
+- Example Request: `EA D1 01 04 FF 1C E7 F5`
 
 ---
 
-## Timing Requirements
+## Response Frames
 
-- The host must wait at least **100 ms** between scan commands to prevent bus collisions.
-- MOS control commands must be acknowledged within **200 ms**.
-- Multi-frame responses must be handled appropriately with timing to avoid data loss.
+Response frames are **variable length**, depending on the command and the number of cells or sensors in the battery. The examples shown in this document are illustrative only. Actual lengths and values vary by battery model (e.g., Orion 1000 has only 4 cells, while other packs may have up to 16).
+
+### Voltage Data Packet (Response to 0x02)
+
+| Byte Index | Field Description               | Value / Meaning              | Notes                                           |
+| ---------- | ------------------------------- | ---------------------------- | ----------------------------------------------- |
+| 1          | Start Byte                      | `0xEA`                       | Fixed                                           |
+| 2          | Product ID                      | `0xD1`                       | Fixed                                           |
+| 3          | Battery Address                 | `0x01`                       | Fixed or DIP-selected                           |
+| 4          | Data Length                     | 1 byte                       | Total length from this byte to End Byte         |
+| 5          | Command High Byte               | `0xFF`                       | Fixed                                           |
+| 6          | Command Low Byte                | `0x02`                       | Identifies voltage data packet                  |
+| 7          | Cell Count in this Packet       | 1 byte                       | Example: `0x10` = 16 cells, `0x04` = 4 cells    |
+| 8          | Number of Temperature Probes    | 1 byte                       | Default = `0x03` (cell temp, MOS temp, ambient) |
+| 9          | Total Number of Cells in System | 1 byte                       | Reports system-wide series cell count           |
+| 10–(9+2N)  | Cell Voltages                   | 2 bytes per cell (High, Low) | Unit = mV, Big-endian (high first)              |
+| Next       | Checksum                        | 1 byte                       | XOR of bytes 4 through last data byte           |
+| Last       | End Byte                        | `0xF5`                       | Fixed                                           |
+
+### Current and Status Data Packet (Response to 0x03)
+
+| Byte Index | Field Description               | Value / Meaning   | Notes                                                                                                               |
+| ---------- | ------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1          | Start Byte                      | `0xEA`            | Fixed                                                                                                               |
+| 2          | Product ID                      | `0xD1`            | Fixed                                                                                                               |
+| 3          | Battery Address                 | `0x01`            | Fixed                                                                                                               |
+| 4          | Data Length                     | 1 byte            | Includes all bytes to End Byte                                                                                      |
+| 5          | Command High Byte               | `0xFF`            | Fixed                                                                                                               |
+| 6          | Command Low Byte                | `0x03`            | Current/status packet                                                                                               |
+| 7          | Status Flags                    | 1 byte, bit field | Bit0: Discharge active; Bit1: Charge active; Bit4: MOS temp present; Bit5: Ambient temp present                     |
+| 8–9        | Current Value                   | 2 bytes, unsigned | Unit = 10 mA; High byte first                                                                                       |
+| 10         | Over-voltage Protection Status  | Bit field         | Bit0: Cell OV, Bit1: Pack OV, Bit4: Full charge protection                                                          |
+| 11         | Under-voltage Protection Status | Bit field         | Bit0: Cell UV, Bit1: Pack UV                                                                                        |
+| 12         | Temperature Protection Status   | Bit field         | Bit0: Charge temp, Bit1: Discharge temp, Bit2: MOS over-temp, Bit4: High-temp, Bit5: Low-temp                       |
+| 13         | General Protection Status       | Bit field         | Bit0: Discharge short circuit, Bit1: Discharge OC, Bit2: Charge OC, Bit4: Ambient high-temp, Bit5: Ambient low-temp |
+| 14         | Number of Temperature Probes    | 1 byte            | Total probes = cells + optional MOS + ambient                                                                       |
+| 15+        | Temperature Data                | N bytes           | Each = Actual temp + 40 °C offset                                                                                   |
+| …          | Software Version                | 1 byte            | Range 1–255                                                                                                         |
+| …          | MOS State                       | 1 byte, bit field | Bit1: Discharge MOS on/off, Bit2: Charge MOS on/off                                                                 |
+| …          | Failure Status                  | 1 byte, bit field | Bit0: Temp acquisition fail, Bit1: Voltage acquisition fail, Bit2: Discharge MOS fail, Bit3: Charge MOS fail        |
+| …          | Reserved Bytes                  | Variable          | As per spec                                                                                                         |
+| Next       | Checksum                        | 1 byte            | XOR of bytes 4 through last data byte                                                                               |
+| Last       | End Byte                        | `0xF5`            | Fixed                                                                                                               |
+
+### Capacity and SOC Data Packet (Response to 0x04)
+
+| Byte Index | Field Description | Value / Meaning                    | Notes                                                        |
+| ---------- | ----------------- | ---------------------------------- | ------------------------------------------------------------ |
+| 1–6        | Header            | Standard (EA D1 Addr Length FF 04) |                                                              |
+| 7          | Tag = `0x01`      | SOC                                | % value (0–100%)                                             |
+| 8          | SOC Value         | 1 byte                             |                                                              |
+| 9          | Tag = `0x02`      | Cycle Count                        |                                                              |
+| 10–11      | Cycle Count       | 2 bytes, High–Low                  |                                                              |
+| 12         | Tag = `0x03`      | Design Capacity High               | 2 bytes                                                      |
+| 15         | Tag = `0x04`      | Design Capacity Low                | 2 bytes                                                      |
+| 18         | Tag = `0x05`      | Full Charge Capacity High          | 2 bytes                                                      |
+| 21         | Tag = `0x06`      | Full Charge Capacity Low           | 2 bytes                                                      |
+| 24         | Tag = `0x07`      | Remaining Capacity High            | 2 bytes                                                      |
+| 27         | Tag = `0x08`      | Remaining Capacity Low             | 2 bytes                                                      |
+| 30         | Tag = `0x09`      | Remaining Discharge Time           | 2 bytes, min                                                 |
+| 33         | Tag = `0x0A`      | Remaining Charge Time              | 2 bytes, min                                                 |
+| 36         | Tag = `0x0B`      | Charge Interval                    | 2 values: current interval, max interval (hours)             |
+| 48–49      | Pack Voltage      | 2 bytes                            | Unit = 10 mV                                                 |
+| 50–51      | Max Cell Voltage  | 2 bytes                            | Unit = 1 mV                                                  |
+| 52–53      | Min Cell Voltage  | 2 bytes                            | Unit = 1 mV                                                  |
+| 54         | Tag = `0x0D`      | Hardware Version                   | 1 byte (1–255)                                               |
+| 55–56      | Scheme ID         | 1 byte                             | High nibble = vendor scheme, Low nibble = protocol extension |
+| 57–59      | Reserved          | 3 bytes                            |                                                              |
+| Next       | Checksum          | 1 byte                             | XOR of bytes 4 through last data byte                        |
+| Last       | End Byte          | `0xF5`                             | Fixed                                                        |
+
+### Serial Number Data Packet (Response to 0x11)
+
+| Byte Index | Field Description    | Value / Meaning                    | Notes                                          |
+| ---------- | -------------------- | ---------------------------------- | ---------------------------------------------- |
+| 1–6        | Header               | Standard (EA D1 Addr Length FF 11) |                                                |
+| 7          | Serial Number Length | 1 byte                             | N (≤31)                                        |
+| 8…(7+N)    | Serial Number ASCII  | N bytes                            | ASCII-encoded serial number                    |
+| Next       | Checksum             | 1 byte                             | XOR of bytes 4 through last serial number byte |
+| Last       | End Byte             | `0xF5`                             | Fixed                                          |
+
+### MOS Control Response (Responses to 0x19–0x1C)
+
+| Byte Index | Field Description | Value / Meaning                        |
+| ---------- | ----------------- | -------------------------------------- |
+| 1–6        | Header            | Standard (EA D1 Addr Length FF \[Cmd]) |
+| 7          | Checksum          | 1 byte, XOR of Length + FF + Cmd       |
+| 8          | End Byte          | `0xF5`                                 |
+
+- Successful execution returns a fixed acknowledgement frame within 200 ms: `EA D1 01 04 FF FF 04 F5`
 
 ---
 
-## Checksum Example
+## Notes
 
-Given the frame:
-
-```
-EA D1 01 04 FF 02 F9 F5
-```
-
-Calculate checksum as XOR of bytes from Length through Command/Data:
-
-```
-Length = 0x04
-Command High = 0xFF
-Command Low = 0x02
-
-Checksum = 0x04 XOR 0xFF XOR 0x02 = 0xF9
-```
-
-This checksum (0xF9) is placed before the End byte (0xF5).
-
----
-
-## Implementation Notes
-
-- Ensure correct calculation of checksum excluding Product ID and Address.
-- Support multi-frame CAN transmission with proper frame IDs.
-- Validate all received frames for correct start/end bytes and checksum.
-- Use 100 ms minimum interval between scan commands.
-- MOS control commands require timely acknowledgement.
-- Follow the specified command set strictly; do not use undocumented commands.
-
----
-
-_Note: This document is a corrected translation aligned with the original Chinese specification for the Orion 1000 BMS Software Protection Board communication protocol._
+- All multi-byte values are transmitted **high byte first (big-endian)**.
+- Cell voltages are reported in **millivolts (mV)**.
+- Currents are reported in **10 mA units**.
+- Temperatures are reported as **raw value − 40 °C**.
+- Response packet sizes vary depending on the number of cells and sensors.
+- This English version excludes CAN bus communication details; only serial communication via RS485/RS232/UART is covered.
