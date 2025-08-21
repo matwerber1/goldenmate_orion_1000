@@ -7,9 +7,10 @@ from typing import Optional
 from ..protocol.constants import START, END
 from ..exceptions import TransportError, TimeoutError
 from ..logging import get_logger, log_frame_tx, log_frame_rx
+from .base import BaseTransport
 
 
-class TcpTransport:
+class TcpTransport(BaseTransport):
     """Synchronous TCP transport for BMS communication."""
 
     def __init__(
@@ -19,6 +20,7 @@ class TcpTransport:
         *,
         connect_timeout: float = 5.0,
         read_timeout: float = 3.0,
+        max_retries: int = 3,
     ) -> None:
         """Initialize TCP transport.
 
@@ -27,7 +29,9 @@ class TcpTransport:
             port: TCP server port
             connect_timeout: Connection timeout in seconds
             read_timeout: Read timeout in seconds
+            max_retries: Maximum number of retries on timeout
         """
+        super().__init__(max_retries=max_retries)
         self.host = host
         self.port = port
         self.connect_timeout = connect_timeout
@@ -59,8 +63,10 @@ class TcpTransport:
             self._socket.close()
             self._socket = None
 
-    def send_request(self, payload: bytes, *, timeout: float | None = None) -> bytes:
-        """Send request and return response bytes.
+    def _send_request_impl(
+        self, payload: bytes, *, timeout: float | None = None
+    ) -> bytes:
+        """Implementation-specific request sending.
 
         Args:
             payload: Request frame bytes to send

@@ -34,9 +34,7 @@ def client(mock_transport: Mock) -> BmsClient:
 @pytest.mark.phase6
 def test_client_initialization(mock_transport: Mock) -> None:
     """Test client initialization."""
-    client = BmsClient(
-        mock_transport, product_id=0xAA, address=0x02, min_spacing_s=0.5
-    )
+    client = BmsClient(mock_transport, product_id=0xAA, address=0x02, min_spacing_s=0.5)
     assert client._transport is mock_transport
     assert client._product_id == 0xAA
     assert client._address == 0x02
@@ -47,7 +45,7 @@ def test_client_initialization(mock_transport: Mock) -> None:
 def test_request_basic(client: BmsClient, mock_transport: Mock) -> None:
     """Test basic request/response."""
     # Mock response frame
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xE5")
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xe5")
     mock_transport.send_request.return_value = response_frame
 
     # Send request
@@ -67,7 +65,7 @@ def test_request_basic(client: BmsClient, mock_transport: Mock) -> None:
 @pytest.mark.phase6
 def test_request_with_timeout(client: BmsClient, mock_transport: Mock) -> None:
     """Test request with timeout."""
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xE5")
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xe5")
     mock_transport.send_request.return_value = response_frame
 
     req = ReadTotalVoltageRequest()
@@ -92,7 +90,7 @@ def test_request_unsupported_command(client: BmsClient) -> None:
 def test_request_command_mismatch(client: BmsClient, mock_transport: Mock) -> None:
     """Test response with mismatched command."""
     # Response with wrong command
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x01, b"\x01\xE5")
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x01, b"\x01\xe5")
     mock_transport.send_request.return_value = response_frame
 
     req = ReadTotalVoltageRequest()  # Command 0x0300
@@ -104,7 +102,7 @@ def test_request_command_mismatch(client: BmsClient, mock_transport: Mock) -> No
 def test_request_spacing() -> None:
     """Test minimum request spacing enforcement."""
     mock_transport = Mock()
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xE5")
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xe5")
     mock_transport.send_request.return_value = response_frame
 
     client = BmsClient(mock_transport, min_spacing_s=0.1)
@@ -128,7 +126,7 @@ def test_request_spacing() -> None:
 @pytest.mark.phase6
 def test_read_total_voltage(client: BmsClient, mock_transport: Mock) -> None:
     """Test read total voltage helper method."""
-    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xE5")
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x00, b"\x01\xe5")
     mock_transport.send_request.return_value = response_frame
 
     voltage = client.read_total_voltage()
@@ -148,9 +146,7 @@ def test_read_current(client: BmsClient, mock_transport: Mock) -> None:
 @pytest.mark.phase6
 def test_read_cell_voltage(client: BmsClient, mock_transport: Mock) -> None:
     """Test read cell voltage helper method."""
-    response_frame = build_frame(
-        PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x01, b"\x03\x0D\x80"
-    )
+    response_frame = build_frame(PRODUCT_ID_DEFAULT, 0x01, 0x03, 0x01, b"\x03\x0d\x80")
     mock_transport.send_request.return_value = response_frame
 
     voltage = client.read_cell_voltage(3)

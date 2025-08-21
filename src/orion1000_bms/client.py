@@ -72,7 +72,11 @@ class BmsClient:
                 time.sleep(self._min_spacing_s - elapsed)
 
             # Look up command spec
-            cmd_id = CommandId(req.command_id)
+            try:
+                cmd_id = CommandId(req.command_id)
+            except ValueError:
+                raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
+            
             if cmd_id not in COMMANDS:
                 raise UnsupportedCommandError(f"Unknown command: {req.command_id}")
 

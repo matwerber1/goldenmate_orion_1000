@@ -30,7 +30,9 @@
         "rubocop",
         "ruff",
         "ruff format *",
-        "source .venv/bin/activate"
+        "source .venv/bin/activate",
+        "source .venv/bin/activate && ruff format *",
+        "source .venv/bin/activate && pytest *"
       ]
     }
   },
