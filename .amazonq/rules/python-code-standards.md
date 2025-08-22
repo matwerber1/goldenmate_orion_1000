@@ -9,3 +9,4 @@
   - Add docstrings in accordance with PEP-0257 (https://peps.python.org/pep-0257/)
   - Packages, modules, classes, methods, and functions MUST have docstrings
   - Business-specific, complex, or otherwise non-obvious code SHOULD have docstrings
+  - If possible, avoid use of `Any` annotation

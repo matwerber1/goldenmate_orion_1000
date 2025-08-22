@@ -3,15 +3,17 @@
 
 import json
 import logging
+from typing import cast
 from orion1000_bms import BmsClient
 from orion1000_bms.transport.tcp import TcpTransport
+from orion1000_bms.commands.base import ResponseBase
 
 
 def main() -> None:
     """Connect to BMS and read all available data."""
 
     logging.basicConfig(
-        level=logging.DEBUG,  # Reduce noise for cleaner JSON output
+        level=logging.DEBUG,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
@@ -20,8 +22,14 @@ def main() -> None:
     port = 26  # TCP device server port
     address = 0x01  # BMS device address
 
-    # Create transport and client
-    transport = TcpTransport(host=host, port=port)
+    # Create transport and client with enhanced reliability settings
+    transport = TcpTransport(
+        host=host,
+        port=port,
+        connection_strategy="per_request",  # Fresh connection per request
+        buffer_settling_time=0.2,  # Allow TCP-to-RS485 bridge to settle
+        read_timeout=5.0,  # Longer timeout for reliability
+    )
     client = BmsClient(transport, address=address)
 
     try:
@@ -49,7 +57,7 @@ def main() -> None:
                     )
 
                     req = SerialNumberRequest()
-                    response = client.request(req)
+                    response = cast(ResponseBase, client.request(req))
                 else:
                     response = command_func()
 

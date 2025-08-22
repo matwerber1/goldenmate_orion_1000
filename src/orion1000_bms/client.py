@@ -138,16 +138,16 @@ class BmsClient:
                     + response_frame.payload
                 )
                 response = spec.resp.from_payload(full_payload)
-                
+
                 # Set metadata on response
                 metadata = ResponseMetadata(
-                    tcp_host=getattr(self._transport, 'host', 'unknown'),
-                    tcp_port=getattr(self._transport, 'port', 0),
+                    tcp_host=getattr(self._transport, "host", "unknown"),
+                    tcp_port=getattr(self._transport, "port", 0),
                     request_timestamp=request_timestamp,
-                    response_timestamp=response_timestamp
+                    response_timestamp=response_timestamp,
                 )
                 response.set_metadata(metadata)
-                
+
                 self._logger.debug(
                     "Successfully processed command 0x%02x", req.command_id
                 )

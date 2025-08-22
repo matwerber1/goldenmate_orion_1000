@@ -23,10 +23,17 @@ from .registry import CommandId, COMMANDS
 from .base import CommandSpec
 
 __all__ = [
+    "VoltageRequest",
+    "VoltageResponse",
     "CapacityStatusRequest",
     "CapacityStatusResponse",
     "CurrentStatusRequest",
     "CurrentStatusResponse",
     "SerialNumberRequest",
     "SerialNumberResponse",
+    "AllowDischargeRequest",
+    "DisallowDischargeRequest",
+    "AllowChargeRequest",
+    "DisallowChargeRequest",
+    "MosControlResponse",
 ]
