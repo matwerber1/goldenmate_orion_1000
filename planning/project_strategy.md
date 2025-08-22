@@ -106,104 +106,7 @@ LICENSE
 
 ---
 
-## 3) Step‑by‑step implementation plan
-
-### Phase 0 – Bootstrap & tooling
-
-1. Create `src/` layout shown above.
-2. Configure `pyproject.toml`:
-   - Build: `setuptools>=68` (or `hatchling`) and `python = ">=3.12"`.
-   - Dev deps: `pytest`, `hypothesis` (optional), `ruff`, `mypy` or `pyright`, `typer[all]` (optional), `coverage`.
-   - Ruff and type‑checker settings (strict but practical).
-3. Add `README.md` with a minimal example; add `LICENSE`.
-
-### Phase 1 – Protocol constants & checksum
-
-- `protocol/constants.py`
-  - `START = 0xEA`, `END = 0xF5`, `PRODUCT_ID_DEFAULT = 0xD1`.
-- `protocol/codec.py`
-  - `def xor_checksum(data: bytes) -> int:` (XOR of ProductId..Data).
-  - Unit tests for checksum examples from the spec.
-
-### Phase 2 – Frame type & encode/decode
-
-- `protocol/frame.py`
-  - Frozen `@dataclass(slots=True)` with fields: `start, product_id, address, data_len, cmd_hi, cmd_lo, payload, checksum, end`.
-  - `to_bytes()` builds the frame and computes checksum.
-  - `@classmethod from_bytes(raw: bytes) -> Frame` validates markers, `data_len`, checksum; returns structured data.
-- `protocol/codec.py`
-  - `build_frame(product_id: int, address: int, cmd_hi: int, cmd_lo: int, payload: bytes) -> bytes`.
-  - `decode(raw: bytes) -> Frame` delegating to `Frame.from_bytes`.
-- Tests: round‑trip encode/decode; boundary checks (short frames, wrong markers, bad checksum, length mismatch).
-
-### Phase 3 – Transport (TCP)
-
-- `transport/base.py` defines `AbstractTransport` Protocol with `open_if_needed()`, `close()`, `send_request(...)`.
-- `transport/tcp.py` (sync): `socket.create_connection`, locks, timeouts, deterministic reads:
-  1. Read 1 byte (start), then next 4 bytes to reach `data_len` field, or read a fixed header size.
-  2. Parse header to compute remaining (2 cmd bytes + data bytes) + checksum + end.
-  3. Read remainder; verify final end byte present.
-- Tests: fake TCP server responds with canned frames for known commands.
-
-### Phase 4 – Exceptions & logging
-
-- `exceptions.py`:
-  - `TransportError`, `TimeoutError`, `ChecksumError`, `FrameError`, `ProtocolError`, `UnsupportedCommandError`.
-- `logging.py`:
-  - `get_logger(__name__)` with library‑friendly defaults.
-  - Hex dumps for TX/RX at debug level (never redact—frames are your truth source).
-
-### Phase 5 – Commands & registry (initial set)
-
-- `commands/base.py` defines `BaseCommand` / `BaseResponse` Protocols and a `CommandSpec` dataclass.
-- `commands/registry.py`:
-  - `class CommandId(IntEnum)` combining hi/lo: e.g., `READ_TOTAL_VOLTAGE = 0x0300`, `READ_CELL_VOLTAGE = 0x0301`, `READ_CURRENT = 0x0302`, etc.
-  - `COMMANDS: dict[CommandId, CommandSpec]` mapping to request/response types.
-- Implement initial commands based on the spec:
-  - `read_total_voltage.py`
-  - `read_cell_voltage.py` (single‑cell index or multi‑frame all‑cells collector)
-  - `read_current.py`
-- Tests use example frames from the spec as golden vectors.
-
-### Phase 6 – Client APIs (sync)
-
-- `client.py` exposes:
-  - `request(self, req: BaseCommand, *, timeout: float | None = None) -> BaseResponse`
-  - Helper methods: `read_total_voltage()`, `read_current()`, `read_cell_voltage(cell: int)`.
-  - Enforce ≥ 200 ms spacing between requests (configurable); allow per‑command overrides.
-- The abstract transport base class and design keep the door open for future async client implementations.
-
-### Phase 7 – CLI (optional but handy)
-
-- `cli.py` with [Typer](https://typer.tiangolo.com/):
-  - `bms status --host 192.168.1.50 --port 4001 --address 0x01`
-  - `bms raw --hex "EA D1 01 02 03 00 D2 F5"`
-  - `bms cells --all`
-
-### Phase 8 – Testing strategy
-
-- **Unit**: checksum, frame parsing, command parsers (edge cases: min/max lengths, invalid markers).
-- **Golden**: hex fixtures from the spec for deterministic parsing tests.
-- **Property** (optional): fuzz payload lengths and checksum correctness with `hypothesis`.
-- **Integration**: `tests/integration/fakes/fake_bms_server.py` that validates incoming frames and returns canned responses per command id. Run client APIs against it.
-
-### Phase 9 – Ergonomics & DX
-
-- Minimal runtime deps: stdlib + optional Typer. Keep install footprint small.
-- Rich type hints and `slots=True` for dataclasses; `__bytes__()` where natural.
-- `ruff` for lint, `pyright` for types. `pytest -q` as default test target.
-- Consider `py.typed` and `py.3.12` markers for typing consumers.
-
-### Phase 10 – Future extensions
-
-- Serial transport using `pyserial` (swap `TcpTransport` with `SerialTransport`).
-- Streaming/subscribe API for periodic polling, with backpressure.
-- Metrics hooks (callbacks) for command durations and error counts.
-- Config command support with guardrails (write operations are dangerous).
-
----
-
-## 4) Code scaffolds (illustrative)
+## 3) Code scaffolds (illustrative)
 
 ### Command id & registry
 
@@ -293,7 +196,7 @@ class BmsClient:
 
 ---
 
-## 5) Acceptance checklist
+## 4) Acceptance checklist
 
 - [ ] Encode/decode round‑trips for all initial commands.
 - [ ] Checksum unit tests cover spec examples.
@@ -305,7 +208,7 @@ class BmsClient:
 
 ---
 
-## 6) Quickstart (once implemented)
+## 5) Quickstart (once implemented)
 
 ```bash
 pip install -e .[dev]

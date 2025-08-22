@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 import logging
-import struct
 from dataclasses import dataclass
 from typing import List
 from .registry import CommandId, COMMANDS
 from .base import CommandSpec, ResponseBase
+from .parsing_utils import parse_big_endian_uint16
 
 logger = logging.getLogger(__name__)
 
@@ -25,58 +25,64 @@ class VoltageRequest:
 
 @dataclass(slots=True, frozen=True)
 class VoltageResponse(ResponseBase):
-    """Response containing cell voltages and temperatures."""
+    """Response containing cell voltages and system metadata."""
 
-    cell_voltages: List[float]  # 16 cell voltages in volts
-    temperatures: List[float]  # 3 temperature probes in Celsius
-    system_string_count: int  # Number of battery strings
+    cell_voltages: List[float]  # Variable number of cell voltages in volts
+    cell_count_in_packet: int  # Number of cells in this packet
+    temp_probe_count: int  # Number of temperature probes
+    total_system_cells: int  # Total cells in the system
 
     @classmethod
     def from_payload(cls, payload: bytes) -> VoltageResponse:
         """Parse voltage data from payload bytes.
 
         Args:
-            payload: Payload with command bytes + 32 cell voltages + 6 temperatures + 1 string count
+            payload: Variable length payload with command bytes + metadata + cell voltages
 
         Returns:
             VoltageResponse with parsed data
         """
-        # Validate expected data length: 32 (voltages) + 6 (temps) + 1 (string count) = 39 bytes
-        cls.validate_payload_length(payload, 39)
+        # Validate minimum payload length: cmd(2) + cell_count(1) + temp_probes(1) + total_cells(1) = 5 bytes
+        cls.validate_minimum_payload_length(payload, 3)
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]
 
-        # Parse 16 cell voltages (32 bytes, 2 bytes each, in mV)
+        # Parse metadata fields according to new spec
+        cell_count_in_packet = data[0]  # Byte 7 in spec
+        temp_probe_count = data[1]  # Byte 8 in spec
+        total_system_cells = data[2]  # Byte 9 in spec
+
+        # Calculate expected cell voltage data length
+        expected_voltage_bytes = cell_count_in_packet * 2
+        min_required_bytes = 3 + expected_voltage_bytes  # metadata + voltages
+
+        if len(data) < min_required_bytes:
+            raise ValueError(
+                f"Insufficient data for {cell_count_in_packet} cells: "
+                f"expected {min_required_bytes}, got {len(data)}"
+            )
+
+        # Parse cell voltages (2 bytes each, in mV, big-endian)
         cell_voltages = []
-        for i in range(16):
-            voltage_raw = struct.unpack(">H", data[i * 2 : (i * 2) + 2])[0]
+        for i in range(cell_count_in_packet):
+            offset = 3 + (i * 2)  # Skip metadata bytes
+            voltage_raw = parse_big_endian_uint16(data, offset)
             voltage = voltage_raw / 1000.0  # Convert mV to V
             cell_voltages.append(voltage)
 
-        # Parse 3 temperature probes (6 bytes, 2 bytes each, in 0.1°C)
-        temperatures = []
-        for i in range(3):
-            temp_raw = struct.unpack(">h", data[32 + i * 2 : 32 + (i * 2) + 2])[
-                0
-            ]  # signed int16
-            temp = temp_raw / 10.0  # Convert 0.1°C to °C
-            temperatures.append(temp)
-
-        # Parse system string count (1 byte)
-        system_string_count = data[38]
-
         logger.debug(
-            "Parsed voltage response: %d cells, %d temps, %d strings",
-            len(cell_voltages),
-            len(temperatures),
-            system_string_count,
+            "Parsed voltage response: %d cells in packet, %d temp probes, %d total system cells",
+            cell_count_in_packet,
+            temp_probe_count,
+            total_system_cells,
         )
 
         return cls(
             cell_voltages=cell_voltages,
-            temperatures=temperatures,
-            system_string_count=system_string_count,
+            cell_count_in_packet=cell_count_in_packet,
+            temp_probe_count=temp_probe_count,
+            total_system_cells=total_system_cells,
         )
 
 

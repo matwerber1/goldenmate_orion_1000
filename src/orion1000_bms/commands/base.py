@@ -35,6 +35,22 @@ class ResponseBase:
                 f"Invalid payload length: {len(payload)}, expected {expected_total}"
             )
 
+    @classmethod
+    def validate_minimum_payload_length(
+        cls, payload: bytes, min_data_bytes: int
+    ) -> None:
+        """Validate payload has minimum required length for variable-length responses.
+
+        Args:
+            payload: Complete payload including command bytes
+            min_data_bytes: Minimum number of data bytes required
+        """
+        min_total = 2 + min_data_bytes  # cmd_hi + cmd_lo + min_data
+        if len(payload) < min_total:
+            raise ValueError(
+                f"Payload too short: {len(payload)}, minimum required {min_total}"
+            )
+
 
 class BaseResponse(Protocol):
     """Protocol for BMS command responses."""

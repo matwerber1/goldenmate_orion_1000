@@ -69,21 +69,24 @@ class MosControlResponse(ResponseBase):
         """Parse MOS control response from payload bytes.
 
         Args:
-            payload: Payload with command bytes + 1 status byte
+            payload: Fixed acknowledgment frame payload
 
         Returns:
             MosControlResponse with command echo and status
         """
-        # Validate expected data length: 1 status byte
-        cls.validate_payload_length(payload, 1)
+        # MOS control responses are fixed acknowledgment frames
+        # Expected: EA D1 01 04 FF FF 04 F5 (successful execution)
+        # Payload should be: FF FF (cmd_hi, cmd_lo)
+        cls.validate_payload_length(payload, 0)
 
-        # Command bytes are echoed back
-        cmd_hi = payload[0]
-        cmd_lo = payload[1]
-        command_id = cmd_lo  # Use command low byte as ID
+        # For successful MOS control, we get fixed acknowledgment
+        # Command bytes in payload are FF FF
+        cmd_hi = payload[0] if len(payload) > 0 else 0xFF
+        cmd_lo = payload[1] if len(payload) > 1 else 0xFF
+        command_id = cmd_lo
 
-        # Status byte
-        status = payload[2]
+        # Status is success if we get the fixed acknowledgment format
+        status = 0x00  # Success
 
         logger.debug(
             "Parsed MOS control response: cmd=0x%02x, status=0x%02x", command_id, status

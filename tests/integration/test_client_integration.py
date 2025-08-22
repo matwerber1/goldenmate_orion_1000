@@ -31,7 +31,7 @@ def test_client_read_voltage_data(client: BmsClient) -> None:
     """Test client read voltage data integration."""
     voltage_data = client.read_voltage_data()
     total_voltage = sum(voltage_data.cell_voltages)
-    assert total_voltage == 48.0  # 16 cells * 3.0V each
+    assert total_voltage == 12.0  # 4 cells * 3.0V each
 
 
 @pytest.mark.phase6
@@ -48,9 +48,9 @@ def test_client_multiple_requests(client: BmsClient) -> None:
     current_status = client.read_current_status()
     voltage_data2 = client.read_voltage_data()
 
-    assert sum(voltage_data1.cell_voltages) == 48.0
+    assert sum(voltage_data1.cell_voltages) == 12.0
     assert current_status.current == 10.5
-    assert sum(voltage_data2.cell_voltages) == 48.0
+    assert sum(voltage_data2.cell_voltages) == 12.0
 
 
 @pytest.mark.phase6
@@ -58,4 +58,4 @@ def test_client_with_timeout(client: BmsClient) -> None:
     """Test client requests with timeout."""
     voltage_data = client.read_voltage_data(timeout=1.0)
     total_voltage = sum(voltage_data.cell_voltages)
-    assert total_voltage == 48.0
+    assert total_voltage == 12.0

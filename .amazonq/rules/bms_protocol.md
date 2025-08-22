@@ -1,1 +1,1 @@
-- Requests sent to a battery and the responses returned must conform to the BMS protocol specification
+- `docs/protocol_pec_english.md` describes the Battery Management System (BMS) serial protocol of the GoldenMate Orion 1000 battery in detail

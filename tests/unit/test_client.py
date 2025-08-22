@@ -42,16 +42,14 @@ def test_client_initialization(mock_transport: Mock) -> None:
 @pytest.mark.phase6
 def test_request_basic(client: BmsClient, mock_transport: Mock) -> None:
     """Test basic request/response."""
-    # Create voltage response payload
+    # Create voltage response payload with new format
     payload = bytearray()
-    # Add 16 cell voltages (3000 mV each)
-    for i in range(16):
+    payload.append(4)  # 4 cells in packet
+    payload.append(3)  # 3 temp probes
+    payload.append(4)  # 4 total system cells
+    # Add 4 cell voltages (3000 mV each)
+    for i in range(4):
         payload.extend(struct.pack(">H", 3000))
-    # Add 3 temperatures (25.0°C each)
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))
-    # Add string count
-    payload.append(1)
 
     # Mock response frame
     response_frame = build_frame(
@@ -70,20 +68,20 @@ def test_request_basic(client: BmsClient, mock_transport: Mock) -> None:
 
     # Verify response
     assert isinstance(resp, VoltageResponse)
-    assert len(resp.cell_voltages) == 16
+    assert len(resp.cell_voltages) == 4
     assert resp.cell_voltages[0] == 3.0
 
 
 @pytest.mark.phase6
 def test_request_with_timeout(client: BmsClient, mock_transport: Mock) -> None:
     """Test request with timeout."""
-    # Create voltage response payload
+    # Create voltage response payload with new format
     payload = bytearray()
-    for i in range(16):
+    payload.append(4)  # 4 cells in packet
+    payload.append(3)  # 3 temp probes
+    payload.append(4)  # 4 total system cells
+    for i in range(4):
         payload.extend(struct.pack(">H", 3000))
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))
-    payload.append(1)
 
     response_frame = build_frame(
         PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload)
@@ -127,13 +125,13 @@ def test_request_spacing() -> None:
     """Test minimum request spacing enforcement."""
     mock_transport = Mock()
 
-    # Create voltage response payload
+    # Create voltage response payload with new format
     payload = bytearray()
-    for i in range(16):
+    payload.append(4)  # 4 cells in packet
+    payload.append(3)  # 3 temp probes
+    payload.append(4)  # 4 total system cells
+    for i in range(4):
         payload.extend(struct.pack(">H", 3000))
-    for i in range(3):
-        payload.extend(struct.pack(">h", 250))
-    payload.append(1)
 
     response_frame = build_frame(
         PRODUCT_ID_DEFAULT, 0x01, COMMAND_HIGH, 0x02, bytes(payload)

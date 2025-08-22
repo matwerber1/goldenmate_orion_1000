@@ -92,31 +92,33 @@ class FakeBmsServer:
     
     def _handle_voltage_request(self, payload: bytes) -> bytes:
         """Handle voltage request command."""
-        # Return fake voltage data: 16 cells + 3 temps + string count
+        # Return fake voltage data in new format: metadata + cell voltages
         import struct
         response_data = bytearray()
-        # 16 cell voltages (3.0V each = 3000mV)
-        for _ in range(16):
+        response_data.append(4)  # 4 cells in packet
+        response_data.append(3)  # 3 temp probes
+        response_data.append(4)  # 4 total system cells
+        # 4 cell voltages (3.0V each = 3000mV)
+        for _ in range(4):
             response_data.extend(struct.pack('>H', 3000))
-        # 3 temperatures (25.0°C each = 250 in 0.1°C)
-        for _ in range(3):
-            response_data.extend(struct.pack('>h', 250))
-        # String count
-        response_data.append(1)
         return build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x02, bytes(response_data))
     
     def _handle_current_status_request(self, payload: bytes) -> bytes:
         """Handle current status request command."""
-        # Return fake current status data
+        # Return fake current status data in new format
         import struct
         response_data = bytearray()
-        response_data.append(0x01)  # Status bits
-        response_data.extend(struct.pack('>h', 105))  # Current 10.5A
-        response_data.append(0x00)  # Protection status
-        # 3 temperatures (25.0°C each)
-        for _ in range(3):
-            response_data.extend(struct.pack('>h', 250))
+        response_data.append(0x01)  # Status flags: discharge_active=1
+        response_data.extend(struct.pack('>H', 1050))  # Current 1050 * 10mA = 10.5A
+        response_data.append(0x00)  # OV protection
+        response_data.append(0x00)  # UV protection
+        response_data.append(0x00)  # Temp protection
+        response_data.append(0x00)  # General protection
+        response_data.append(3)     # 3 temperature probes
+        response_data.append(65)    # Temp 1: 65 - 40 = 25°C
+        response_data.append(66)    # Temp 2: 66 - 40 = 26°C
+        response_data.append(64)    # Temp 3: 64 - 40 = 24°C
+        response_data.append(0x01)  # Software version
         response_data.append(0x03)  # MOS states
-        response_data.append(0x01)  # Version
-        response_data.append(0x00)  # Fault flags
+        response_data.append(0x00)  # Failure status
         return build_frame(PRODUCT_ID_DEFAULT, 0x01, 0xFF, 0x03, bytes(response_data))
