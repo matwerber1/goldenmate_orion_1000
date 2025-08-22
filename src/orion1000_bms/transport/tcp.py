@@ -46,7 +46,7 @@ class TcpTransport(BaseTransport):
                 self._serial = serial.serial_for_url(
                     url,
                     timeout=self.read_timeout,
-                    inter_byte_timeout=0.2,
+                    inter_byte_timeout=0.15,
                     write_timeout=1.0,
                 )
                 self._logger.debug("Connected to %s:%d", self.host, self.port)
@@ -60,11 +60,11 @@ class TcpTransport(BaseTransport):
         if self._serial:
             self._serial.close()
             self._serial = None
-    
+
     def __enter__(self) -> "TcpTransport":
         """Context manager entry."""
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit with automatic cleanup."""
         self.close()
@@ -116,11 +116,11 @@ class TcpTransport(BaseTransport):
         end_by = time.monotonic() + timeout_s
         buf = bytearray()
         consecutive_empty_reads = 0
-        
+
         while len(buf) < n:
             if time.monotonic() > end_by:
                 raise TimeoutError(f"Timeout reading {n} bytes (got {len(buf)})")
-            
+
             try:
                 chunk = self._serial.read(n - len(buf))
                 if chunk:
@@ -130,13 +130,15 @@ class TcpTransport(BaseTransport):
                     consecutive_empty_reads += 1
                     # If we get too many empty reads, the connection might be broken
                     if consecutive_empty_reads > 100:
-                        raise TransportError("Connection appears to be broken (too many empty reads)")
+                        raise TransportError(
+                            "Connection appears to be broken (too many empty reads)"
+                        )
                     time.sleep(0.005)
             except Exception as e:
                 if "timeout" not in str(e).lower():
                     raise TransportError(f"Read error: {e}")
                 raise TimeoutError(f"Timeout reading {n} bytes (got {len(buf)})")
-                
+
         return bytes(buf)
 
     def _read_frame(self, timeout: float) -> bytes:

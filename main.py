@@ -14,7 +14,7 @@ def main() -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
     # Configure connection - update these values for your setup
-    host = "192.168.99.94"  # TCP device server IP
+    host = "192.168.99.93"  # TCP device server IP
     port = 26  # TCP device server port
     address = 0x01  # BMS device address
 
