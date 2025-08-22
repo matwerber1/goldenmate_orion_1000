@@ -5,7 +5,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, cast
 
-from .commands.base import BaseCommand, BaseResponse, ResponseMetadata
+from .commands.base import BaseCommand, BaseResponse, ResponseBase, ResponseMetadata
 from .commands.registry import COMMANDS, CommandId
 from .commands import (
     VoltageRequest,
@@ -146,7 +146,7 @@ class BmsClient:
                     request_timestamp=request_timestamp,
                     response_timestamp=response_timestamp,
                 )
-                response.set_metadata(metadata)
+                cast(ResponseBase, response).set_metadata(metadata)
 
                 self._logger.debug(
                     "Successfully processed command 0x%02x", req.command_id
