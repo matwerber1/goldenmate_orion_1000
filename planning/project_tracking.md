@@ -173,3 +173,8 @@ This document tracks the completion status of each phase and step outlined in th
 - Fixed fake BMS server to include command bytes in response payloads as expected by parsers.
 - Fixed client integration tests by correcting fake server payload format - removed duplicate command bytes since client adds them automatically.
 - Updated TCP transport test expectations to match corrected payload sizes.
+- Enhanced ResponseBase with metadata fields (TCP host/port, request/response timestamps) and JSON serialization support.
+- Updated BmsClient to capture and set response metadata with timing information.
+- Completely rewrote main.py to test all four read-only commands and output complete JSON-formatted responses.
+- Fixed capacity status request minimum payload length to match actual BMS response (49 bytes vs 50).
+- Validated all four commands work correctly against real Orion 1000 BMS hardware.

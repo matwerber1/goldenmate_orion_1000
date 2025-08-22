@@ -1,1 +1,2 @@
 - `docs/protocol_pec_english.md` describes the Battery Management System (BMS) serial protocol of the GoldenMate Orion 1000 battery in detail
+- `main.py` is used to perform a real test of read-only data requests and responses.

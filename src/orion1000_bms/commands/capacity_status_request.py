@@ -58,8 +58,8 @@ class CapacityStatusResponse(ResponseBase):
         """
         # Validate minimum payload length
         cls.validate_minimum_payload_length(
-            payload, 50
-        )  # Minimum expected based on spec
+            payload, 49
+        )  # Adjusted based on actual BMS response
 
         # Skip command bytes (first 2 bytes)
         data = payload[2:]

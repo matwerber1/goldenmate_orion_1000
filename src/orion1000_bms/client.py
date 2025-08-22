@@ -5,7 +5,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, cast
 
-from .commands.base import BaseCommand, BaseResponse
+from .commands.base import BaseCommand, BaseResponse, ResponseMetadata
 from .commands.registry import COMMANDS, CommandId
 from .commands import (
     VoltageRequest,
@@ -108,10 +108,12 @@ class BmsClient:
                 self._product_id, self._address, cmd_hi, cmd_lo, payload
             )
 
-            # Send request and get response
+            # Send request and get response with timing
+            request_timestamp = time.time()
             response_bytes = self._transport.send_request(
                 request_frame, timeout=timeout
             )
+            response_timestamp = time.time()
 
             # Parse response
             from .protocol.codec import decode
@@ -136,6 +138,16 @@ class BmsClient:
                     + response_frame.payload
                 )
                 response = spec.resp.from_payload(full_payload)
+                
+                # Set metadata on response
+                metadata = ResponseMetadata(
+                    tcp_host=getattr(self._transport, 'host', 'unknown'),
+                    tcp_port=getattr(self._transport, 'port', 0),
+                    request_timestamp=request_timestamp,
+                    response_timestamp=response_timestamp
+                )
+                response.set_metadata(metadata)
+                
                 self._logger.debug(
                     "Successfully processed command 0x%02x", req.command_id
                 )
