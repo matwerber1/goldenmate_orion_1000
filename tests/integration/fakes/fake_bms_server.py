@@ -92,9 +92,10 @@ class FakeBmsServer:
     
     def _handle_voltage_request(self, payload: bytes) -> bytes:
         """Handle voltage request command."""
-        # Return fake voltage data in new format: metadata + cell voltages
+        # Return fake voltage data: metadata + cell voltages (client will add command bytes)
         import struct
         response_data = bytearray()
+        # Metadata
         response_data.append(4)  # 4 cells in packet
         response_data.append(3)  # 3 temp probes
         response_data.append(4)  # 4 total system cells
@@ -105,9 +106,10 @@ class FakeBmsServer:
     
     def _handle_current_status_request(self, payload: bytes) -> bytes:
         """Handle current status request command."""
-        # Return fake current status data in new format
+        # Return fake current status data (client will add command bytes)
         import struct
         response_data = bytearray()
+        # Data
         response_data.append(0x01)  # Status flags: discharge_active=1
         response_data.extend(struct.pack('>H', 1050))  # Current 1050 * 10mA = 10.5A
         response_data.append(0x00)  # OV protection

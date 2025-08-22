@@ -60,6 +60,14 @@ class TcpTransport(BaseTransport):
         if self._serial:
             self._serial.close()
             self._serial = None
+    
+    def __enter__(self) -> "TcpTransport":
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Context manager exit with automatic cleanup."""
+        self.close()
 
     def _send_request_impl(
         self, payload: bytes, *, timeout: float | None = None
@@ -107,14 +115,28 @@ class TcpTransport(BaseTransport):
 
         end_by = time.monotonic() + timeout_s
         buf = bytearray()
+        consecutive_empty_reads = 0
+        
         while len(buf) < n:
             if time.monotonic() > end_by:
                 raise TimeoutError(f"Timeout reading {n} bytes (got {len(buf)})")
-            chunk = self._serial.read(n - len(buf))
-            if chunk:
-                buf.extend(chunk)
-            else:
-                time.sleep(0.005)
+            
+            try:
+                chunk = self._serial.read(n - len(buf))
+                if chunk:
+                    buf.extend(chunk)
+                    consecutive_empty_reads = 0
+                else:
+                    consecutive_empty_reads += 1
+                    # If we get too many empty reads, the connection might be broken
+                    if consecutive_empty_reads > 100:
+                        raise TransportError("Connection appears to be broken (too many empty reads)")
+                    time.sleep(0.005)
+            except Exception as e:
+                if "timeout" not in str(e).lower():
+                    raise TransportError(f"Read error: {e}")
+                raise TimeoutError(f"Timeout reading {n} bytes (got {len(buf)})")
+                
         return bytes(buf)
 
     def _read_frame(self, timeout: float) -> bytes:

@@ -69,6 +69,7 @@ This document tracks the completion status of each phase and step outlined in th
 - [x] APPROVED: Implement logger factory in `logging.py` with hex dump support
 
 ### Affected Files:
+
 - src/orion1000_bms/exceptions.py
 - src/orion1000_bms/logging.py
 - src/orion1000_bms/protocol/frame.py
@@ -86,6 +87,7 @@ This document tracks the completion status of each phase and step outlined in th
 - [x] APPROVED: Add tests using example frames from spec as golden vectors
 
 ### Affected Files:
+
 - src/orion1000_bms/commands/base.py
 - src/orion1000_bms/commands/read_cell_voltage.py
 - src/orion1000_bms/commands/read_current.py
@@ -102,7 +104,8 @@ This document tracks the completion status of each phase and step outlined in th
 - [x] PENDING_APPROVAL: Enforce ≥200ms spacing between requests with configurable overrides
 
 ### Affected Files:
-- src/orion1000_bms/__init__.py
+
+- src/orion1000_bms/**init**.py
 - src/orion1000_bms/client.py
 - tests/integration/test_client_integration.py
 - tests/unit/test_client.py
@@ -164,3 +167,9 @@ This document tracks the completion status of each phase and step outlined in th
 - Completely rewrote voltage, current status, and capacity status response parsing to match updated specification.
 - Fixed MOS control response parsing to handle fixed acknowledgment frame format.
 - Added comprehensive tests for new parsing utilities and updated command logic.
+- Fixed TCP transport test hanging issue by adding proper cleanup with try/finally blocks and context manager support.
+- Enhanced TcpTransport with context manager protocol for automatic resource cleanup.
+- Improved \_read_exact method to detect broken connections and avoid infinite loops.
+- Fixed fake BMS server to include command bytes in response payloads as expected by parsers.
+- Fixed client integration tests by correcting fake server payload format - removed duplicate command bytes since client adds them automatically.
+- Updated TCP transport test expectations to match corrected payload sizes.
